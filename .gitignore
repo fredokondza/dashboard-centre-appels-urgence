@@ -1,0 +1,15 @@
+# Ignorer l'environnement virtuel
+venv/
+
+# Ignorer les caches Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook checkpoints (si tu en as)
+.ipynb_checkpoints/

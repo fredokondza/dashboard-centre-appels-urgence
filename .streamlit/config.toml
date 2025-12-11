@@ -1,0 +1,18 @@
+[client]
+toolbarMode = "minimal"
+showSidebarNavigation = true
+
+[ui]
+hideTopBar = false
+hideSidebarNav = false
+
+[server]
+enableCORS = false
+port = 8501
+
+[theme]
+primaryColor = "#007A33"
+backgroundColor = "#f8f9fa"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#343a40"
+font = "sans serif"
