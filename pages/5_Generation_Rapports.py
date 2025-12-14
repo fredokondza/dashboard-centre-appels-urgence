@@ -1,31 +1,32 @@
 """
 ==============================================================================
-PAGE 5 - GÉNÉRATION DE RAPPORTS POWERPOINT
+PAGE 5 - GÉNÉRATION DE RAPPORTS POWERPOINT - VERSION AMÉLIORÉE
 ==============================================================================
 Page dédiée à la génération automatique de rapports PowerPoint :
-- 3 modèles disponibles (Original, A, B)
-- Sélection de la semaine épidémiologique
+- Modèle UNIQUE optimisé (MINSANTE)
+- Sélection par semaine OU par période personnalisée (jour début + jour fin)
 - Génération automatique avec données actualisées
 - Téléchargement du rapport généré
 - Historique des rapports
 
-Modèles disponibles :
-- Modèle Original : 7 slides (Standard MINSANTE)
-- Modèle A : 16 slides (Analyse détaillée)
-- Modèle B : 12 slides (Format condensé)
+Nouveautés v4.0:
+✨ Filtre de dates personnalisé (jour début - jour fin)
+✨ Modèle unique optimisé avec graphiques améliorés
+✨ Interface simplifiée et intuitive
 
 Auteur: Fred - AIMS Cameroon / MINSANTE
 Date: Décembre 2025
-Version: 3.1 FINALE - Session State + Footer CCOUSP/MINSANTE
+Version: 4.0 - Filtre Dates Personnalisées + Modèle Unique Optimisé
 ==============================================================================
 """
 
 import streamlit as st
 import streamlit.components.v1 as components
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import traceback
+import pandas as pd
 
 # Imports de la nouvelle architecture
 from config import settings
@@ -50,11 +51,17 @@ st.set_page_config(
 # INITIALISATION SESSION STATE
 # ==============================================================================
 
-if 'modele_selectionne' not in st.session_state:
-    st.session_state.modele_selectionne = None
+if 'mode_selection' not in st.session_state:
+    st.session_state.mode_selection = "semaine"  # "semaine" ou "periode"
 
 if 'rapport_genere' not in st.session_state:
     st.session_state.rapport_genere = None
+
+if 'date_debut' not in st.session_state:
+    st.session_state.date_debut = None
+
+if 'date_fin' not in st.session_state:
+    st.session_state.date_fin = None
 
 # ==============================================================================
 # CSS + JAVASCRIPT
@@ -130,27 +137,19 @@ parent.document.addEventListener('click', function(e) {
 """, height=0)
 
 logger = setup_logger('generation_rapports')
-logger.info("=== Page Génération de Rapports chargée ===")
+logger.info("=== Page Génération de Rapports v4.0 chargée ===")
 
 # ==============================================================================
 # IMPORTS DES GÉNÉRATEURS POWERPOINT
 # ==============================================================================
 
-# Générateur ORIGINAL
+# Générateur OPTIMISÉ (Modèle Unique)
 try:
     from utils.pptx_generator_minsante import generer_rapport_minsante
-    ORIGINAL_AVAILABLE = True
+    GENERATOR_AVAILABLE = True
 except Exception as e:
-    ORIGINAL_AVAILABLE = False
-    logger.error(f"Générateur ORIGINAL non disponible : {e}")
-
-# Générateur AVANCÉ
-try:
-    from utils.pptx_generator_advanced import generer_rapport_avance
-    ADVANCED_AVAILABLE = True
-except Exception as e:
-    ADVANCED_AVAILABLE = False
-    logger.error(f"Générateur AVANCÉ non disponible : {e}")
+    GENERATOR_AVAILABLE = False
+    logger.error(f"Générateur non disponible : {e}")
 
 # ==============================================================================
 # SIDEBAR
@@ -164,7 +163,7 @@ render_sidebar()
 
 page_header(
     title="GÉNÉRATION DE RAPPORTS POWERPOINT",
-    subtitle="Rapports automatisés au format MINSANTE",
+    subtitle="Rapport MINSANTE avec graphiques optimisés - 7 slides professionnelles",
     icon="📊"
 )
 
@@ -183,111 +182,78 @@ try:
     df_calendrier = donnees['calendrier']
     df_hebdo = donnees['hebdomadaire']
     
+    # Récupérer les dates min/max disponibles
+    date_min = df_appels['DATE'].min()
+    date_max = df_appels['DATE'].max()
+    
 except Exception as e:
     st.error(settings.MESSAGES['error']['data_inconsistency'])
     logger.error(f"Erreur chargement : {str(e)}")
     st.stop()
 
 # ==============================================================================
-# SECTION 1 : SÉLECTION DU MODÈLE
+# VÉRIFICATION DISPONIBILITÉ GÉNÉRATEUR
 # ==============================================================================
 
-section_header("Sélection du Modèle de Rapport", icon="📋")
+if not GENERATOR_AVAILABLE:
+    st.error("❌ **Générateur de rapport non disponible**")
+    st.error("Vérifiez que le fichier `utils/pptx_generator_minsante.py` existe et est correct.")
+    st.stop()
 
-st.info(
-    "Choisissez le modèle de rapport selon vos besoins : analyse standard, détaillée ou condensée"
-)
+# ==============================================================================
+# SECTION 1 : MODE DE SÉLECTION
+# ==============================================================================
 
-# Afficher les modèles disponibles
-col1, col2, col3 = st.columns(3)
+section_header("Mode de Sélection de Période", icon="📅")
+
+st.info("""
+**Deux options disponibles :**
+
+📊 **Par semaine épidémiologique** : Sélectionnez une semaine complète (S1, S2, etc.)  
+📅 **Par période personnalisée** : Choisissez n'importe quel jour de début et jour de fin
+""")
+
+col1, col2 = st.columns(2)
 
 with col1:
-    # Modèle Original
-    st.markdown("### 📄 Modèle Original")
-    st.markdown("**7 slides - Format standard MINSANTE**")
-    st.markdown("""
-    - Page de titre
-    - Faits saillants
-    - Comparaison semaine précédente
-    - Top 10 catégories
-    - Répartition thématique
-    - Évolution temporelle
-    - Contact
-    """)
-    
-    if ORIGINAL_AVAILABLE:
-        if st.button("✅ Sélectionner", key="btn_original", use_container_width=True):
-            st.session_state.modele_selectionne = "ORIGINAL"
-            st.session_state.rapport_genere = None
-            st.rerun()
-    else:
-        st.error("❌ Non disponible")
-
-with col2:
-    # Modèle A (Avancé)
-    st.markdown("### 📊 Modèle A - Détaillé")
-    st.markdown("**16 slides - Analyse approfondie**")
-    st.markdown("""
-    - Analyse détaillée par catégorie
-    - Graphiques comparatifs avancés
-    - Statistiques détaillées
-    - Analyse des variations
-    - Tendances et projections
-    - Annexes complètes
-    """)
-    
-    if ADVANCED_AVAILABLE:
-        if st.button("✅ Sélectionner", key="btn_a", use_container_width=True):
-            st.session_state.modele_selectionne = "A"
-            st.session_state.rapport_genere = None
-            st.rerun()
-    else:
-        st.error("❌ Non disponible")
-
-with col3:
-    # Modèle B (Condensé)
-    st.markdown("### 📑 Modèle B - Condensé")
-    st.markdown("**12 slides - Format compact**")
-    st.markdown("""
-    - Synthèse des KPIs
-    - Top catégories uniquement
-    - Comparaison simplifiée
-    - Graphiques essentiels
-    - Format de présentation rapide
-    """)
-    
-    if ADVANCED_AVAILABLE:
-        if st.button("✅ Sélectionner", key="btn_b", use_container_width=True):
-            st.session_state.modele_selectionne = "B"
-            st.session_state.rapport_genere = None
-            st.rerun()
-    else:
-        st.error("❌ Non disponible")
-
-# Afficher le modèle sélectionné
-if st.session_state.modele_selectionne:
-    modele_label = {
-        "ORIGINAL": "Modèle Original",
-        "A": "Modèle A - Détaillé",
-        "B": "Modèle B - Condensé"
-    }
-    st.success(f"✅ {modele_label[st.session_state.modele_selectionne]} sélectionné")
-    
-    # Bouton pour changer de modèle
-    if st.button("🔄 Changer de modèle", key="btn_reset"):
-        st.session_state.modele_selectionne = None
+    if st.button("📊 Sélection par SEMAINE", 
+                 use_container_width=True, 
+                 type="primary" if st.session_state.mode_selection == "semaine" else "secondary"):
+        st.session_state.mode_selection = "semaine"
         st.session_state.rapport_genere = None
         st.rerun()
 
+with col2:
+    if st.button("📅 Sélection par PÉRIODE (Jour début - Jour fin)", 
+                 use_container_width=True,
+                 type="primary" if st.session_state.mode_selection == "periode" else "secondary"):
+        st.session_state.mode_selection = "periode"
+        st.session_state.rapport_genere = None
+        st.rerun()
+
+# Afficher le mode sélectionné
+mode_label = {
+    "semaine": "📊 Sélection par Semaine Épidémiologique",
+    "periode": "📅 Sélection par Période Personnalisée"
+}
+st.success(f"✅ Mode actif : **{mode_label[st.session_state.mode_selection]}**")
+
+st.markdown("---")
+
 # ==============================================================================
-# SECTION 2 : CONFIGURATION DU RAPPORT
+# SECTION 2 : CONFIGURATION SELON LE MODE
 # ==============================================================================
 
-if st.session_state.modele_selectionne:
+section_header("Configuration du Rapport", icon="⚙️")
+
+if st.session_state.mode_selection == "semaine":
+    # ========================================================================
+    # MODE SEMAINE ÉPIDÉMIOLOGIQUE
+    # ========================================================================
     
-    section_header("Configuration du Rapport", icon="⚙️")
+    st.markdown("### 📊 Sélection par Semaine Épidémiologique")
     
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([2, 1])
     
     with col1:
         # Sélection de la semaine
@@ -303,168 +269,295 @@ if st.session_state.modele_selectionne:
             index=0,
             help="La semaine sur laquelle portera le rapport"
         )
+        
+        # Afficher les dates de la semaine
+        df_semaine_info = df_appels[df_appels['Semaine épidémiologique'] == semaine_selectionnee]
+        date_debut_semaine = df_semaine_info['DATE'].min()
+        date_fin_semaine = df_semaine_info['DATE'].max()
+        
+        st.info(f"📅 Période : **{date_debut_semaine.strftime('%d/%m/%Y')}** au **{date_fin_semaine.strftime('%d/%m/%Y')}**")
     
     with col2:
-        # Options du rapport
-        st.markdown("**Options :**")
+        # Statistiques de la semaine
+        st.markdown("**📊 Aperçu de la semaine :**")
+        total_appels = df_semaine_info['TOTAL_APPELS_JOUR'].sum()
+        nb_jours = len(df_semaine_info)
         
-        # Options selon le modèle
-        if st.session_state.modele_selectionne == "ORIGINAL":
-            inclure_comparaison = st.checkbox("Inclure comparaison semaine précédente", value=True)
-            inclure_evolution = st.checkbox("Inclure graphique d'évolution", value=True)
-        elif st.session_state.modele_selectionne == "A":
-            inclure_annexes = st.checkbox("Inclure annexes complètes", value=True)
-            inclure_projections = st.checkbox("Inclure projections", value=False)
-        else:  # Modèle B
-            format_compact = st.checkbox("Format ultra-compact", value=False)
+        st.metric("Total Appels", f"{total_appels:,}".replace(",", " "))
+        st.metric("Jours de données", nb_jours)
     
-    # Aperçu de la configuration
+    # Variables pour la génération
+    data_debut = date_debut_semaine
+    data_fin = date_fin_semaine
+    mode_generation = "semaine"
+    periode_label = semaine_selectionnee
+
+else:
+    # ========================================================================
+    # MODE PÉRIODE PERSONNALISÉE
+    # ========================================================================
+    
+    st.markdown("### 📅 Sélection par Période Personnalisée")
+    
+    st.info(f"""
+    📊 **Données disponibles :**  
+    Du **{date_min.strftime('%d/%m/%Y')}** au **{date_max.strftime('%d/%m/%Y')}**
+    
+    Sélectionnez n'importe quelle période dans cette plage.
+    """)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Date de début
+        date_debut_input = st.date_input(
+            "📅 Date de DÉBUT",
+            value=date_max - timedelta(days=6),  # Par défaut : dernière semaine
+            min_value=date_min,
+            max_value=date_max,
+            help="Premier jour de la période",
+            format="DD/MM/YYYY"
+        )
+        
+        st.session_state.date_debut = pd.to_datetime(date_debut_input)
+    
+    with col2:
+        # Date de fin
+        date_fin_input = st.date_input(
+            "📅 Date de FIN",
+            value=date_max,
+            min_value=date_min,
+            max_value=date_max,
+            help="Dernier jour de la période",
+            format="DD/MM/YYYY"
+        )
+        
+        st.session_state.date_fin = pd.to_datetime(date_fin_input)
+    
+    # Validation de la période
+    if st.session_state.date_debut > st.session_state.date_fin:
+        st.error("❌ **Erreur** : La date de début doit être antérieure ou égale à la date de fin")
+        st.stop()
+    
+    # Calculer la durée
+    duree_periode = (st.session_state.date_fin - st.session_state.date_debut).days + 1
+    
+    # Filtrer les données de la période
+    df_periode = df_appels[
+        (df_appels['DATE'] >= st.session_state.date_debut) & 
+        (df_appels['DATE'] <= st.session_state.date_fin)
+    ]
+    
+    # Vérifier qu'il y a des données
+    if len(df_periode) == 0:
+        st.warning("⚠️ **Aucune donnée disponible pour cette période**")
+        st.stop()
+    
+    # Afficher les statistiques de la période
     st.markdown("---")
-    st.markdown("### 📋 Récapitulatif de la Configuration")
+    st.markdown("### 📊 Aperçu de la Période Sélectionnée")
     
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Durée", f"{duree_periode} jour(s)")
+    
+    with col2:
+        total_appels_periode = df_periode['TOTAL_APPELS_JOUR'].sum()
+        st.metric("Total Appels", f"{total_appels_periode:,}".replace(",", " "))
+    
+    with col3:
+        moyenne_periode = int(df_periode['TOTAL_APPELS_JOUR'].mean())
+        st.metric("Moyenne/Jour", f"{moyenne_periode:,}".replace(",", " "))
+    
+    with col4:
+        nb_jours_data = len(df_periode)
+        st.metric("Jours de données", nb_jours_data)
+    
+    # Variables pour la génération
+    data_debut = st.session_state.date_debut
+    data_fin = st.session_state.date_fin
+    mode_generation = "periode"
+    periode_label = f"{data_debut.strftime('%d/%m/%Y')} au {data_fin.strftime('%d/%m/%Y')}"
+
+# ==============================================================================
+# RÉCAPITULATIF DE LA CONFIGURATION
+# ==============================================================================
+
+st.markdown("---")
+st.markdown("### 📋 Récapitulatif de la Configuration")
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric("Modèle", "MINSANTE Optimisé")
+
+with col2:
+    st.metric("Période", periode_label)
+
+with col3:
+    st.metric("Slides", "7")
+
+with col4:
+    nb_jours_rapport = (data_fin - data_debut).days + 1
+    st.metric("Jours", nb_jours_rapport)
+
+# ==============================================================================
+# SECTION 3 : GÉNÉRATION DU RAPPORT
+# ==============================================================================
+
+st.markdown("---")
+section_header("Génération du Rapport", icon="🚀")
+
+# Informations avant génération
+st.info("""
+**Avant de générer :**
+
+✅ Vérifiez la période sélectionnée  
+✅ La génération peut prendre 20-40 secondes  
+✅ Le fichier sera téléchargeable immédiatement après génération
+
+**Contenu du rapport :**
+- 📊 Slide 1 : Page de titre avec drapeau du Cameroun
+- 📈 Slide 2 : Faits saillants avec 3 graphiques camembert optimisés
+- 📋 Slide 3 : Tableau de comparaison
+- 📊 Slide 4 : Graphique d'évolution avec étiquettes
+- 💬 Slide 5 : Questions d'intérêt
+- ✅ Slide 6 : Activités menées et planifiées
+- 🙏 Slide 7 : Remerciements
+""")
+
+# Bouton de génération
+if st.button("🎯 GÉNÉRER LE RAPPORT POWERPOINT", type="primary", use_container_width=True, key="btn_generer"):
+    
+    with st.spinner(f"⏳ Génération du rapport pour la période {periode_label} en cours..."):
+        
+        try:
+            start_time = datetime.now()
+            
+            # Générer le nom de fichier
+            if mode_generation == "semaine":
+                prefix = f"rapport_MINSANTE_{periode_label}"
+            else:
+                prefix = f"rapport_MINSANTE_{data_debut.strftime('%Y%m%d')}_{data_fin.strftime('%Y%m%d')}"
+            
+            filename = generer_nom_fichier(
+                prefix,
+                extension='pptx',
+                include_timestamp=True
+            )
+            
+            output_path = settings.OUTPUTS_DIR / filename
+            
+            # S'assurer que le dossier outputs existe
+            settings.OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+            
+            # Filtrer les données pour la période sélectionnée
+            if mode_generation == "semaine":
+                df_filtered = df_appels[df_appels['Semaine épidémiologique'] == periode_label]
+                semaine_param = periode_label
+            else:
+                df_filtered = df_appels[
+                    (df_appels['DATE'] >= data_debut) & 
+                    (df_appels['DATE'] <= data_fin)
+                ]
+                # Pour mode période, on utilise la semaine de la date de fin
+                semaine_param = df_filtered['Semaine épidémiologique'].iloc[-1] if len(df_filtered) > 0 else "CUSTOM"
+            
+            # Appeler le générateur
+            output_file = generer_rapport_minsante(
+                df_appels=df_filtered,
+                df_calendrier=df_calendrier,
+                semaine=semaine_param,
+                output_path=str(output_path)
+            )
+            
+            # Calculer la durée
+            duree = (datetime.now() - start_time).total_seconds()
+            
+            # Vérifier que le fichier existe
+            if Path(output_file).exists():
+                # Stocker les infos du rapport dans session_state
+                st.session_state.rapport_genere = {
+                    'fichier': output_file,
+                    'nom': filename,
+                    'duree': duree,
+                    'taille': Path(output_file).stat().st_size / 1024 / 1024,
+                    'periode': periode_label,
+                    'mode': mode_generation
+                }
+                
+                st.success(f"✅ Rapport généré avec succès en {duree:.1f}s !")
+                st.balloons()
+                
+                # Logs
+                log_generation_rapport(
+                    modele="MINSANTE_OPTIMISE",
+                    nb_slides=7,
+                    success=True,
+                    duree=duree
+                )
+                
+            else:
+                raise Exception("Le fichier n'a pas été créé")
+        
+        except Exception as e:
+            st.error(f"❌ Erreur lors de la génération : {str(e)}")
+            
+            # Afficher le traceback pour le debugging
+            with st.expander("🔍 Détails de l'erreur"):
+                st.code(traceback.format_exc())
+            
+            log_generation_rapport(
+                modele="MINSANTE_OPTIMISE",
+                success=False,
+                message=str(e)
+            )
+            logger.error(f"Erreur génération rapport : {str(e)}")
+
+# ==============================================================================
+# SECTION 4 : TÉLÉCHARGEMENT
+# ==============================================================================
+
+# Afficher le bouton de téléchargement si un rapport a été généré
+if st.session_state.rapport_genere:
+    st.markdown("---")
+    section_header("Téléchargement du Rapport", icon="📥")
+    
+    info = st.session_state.rapport_genere
+    
+    # Informations sur le rapport généré
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Modèle", st.session_state.modele_selectionne)
+        st.metric("📄 Fichier", info['nom'][:30] + "...")
+    
     with col2:
-        st.metric("Semaine", semaine_selectionnee)
+        st.metric("📏 Taille", f"{info['taille']:.2f} MB")
+    
     with col3:
-        nb_slides = 7 if st.session_state.modele_selectionne == "ORIGINAL" else (16 if st.session_state.modele_selectionne == "A" else 12)
-        st.metric("Slides", nb_slides)
+        st.metric("⏱️ Temps de génération", f"{info['duree']:.1f}s")
     
-    # ==============================================================================
-    # SECTION 3 : GÉNÉRATION DU RAPPORT
-    # ==============================================================================
+    # Bouton de téléchargement
+    with open(info['fichier'], 'rb') as f:
+        st.download_button(
+            label="📥 TÉLÉCHARGER LE RAPPORT POWERPOINT",
+            data=f,
+            file_name=info['nom'],
+            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            use_container_width=True,
+            type="primary"
+        )
     
-    section_header("Génération du Rapport", icon="🚀")
-    
-    # Informations avant génération
-    st.info("""
-    **Avant de générer :**
-    
-    ✅ Vérifiez la semaine sélectionnée  
-    ✅ Vérifiez les options configurées  
-    ✅ La génération peut prendre 20-40 secondes  
-    
-    Le fichier sera disponible au téléchargement après génération.
-    """)
-    
-    # Bouton de génération
-    if st.button("🎯 GÉNÉRER LE RAPPORT", type="primary", use_container_width=True, key="btn_generer"):
-        
-        with st.spinner(f"⏳ Génération du rapport Modèle {st.session_state.modele_selectionne} en cours..."):
-            
-            try:
-                start_time = datetime.now()
-                
-                # Générer le nom de fichier
-                filename = generer_nom_fichier(
-                    f"rapport_{st.session_state.modele_selectionne}_{semaine_selectionnee}",
-                    extension='pptx',
-                    include_timestamp=True
-                )
-                
-                output_path = settings.OUTPUTS_DIR / filename
-                
-                # S'assurer que le dossier outputs existe
-                settings.OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-                
-                # Appeler le générateur approprié
-                if st.session_state.modele_selectionne == "ORIGINAL":
-                    if ORIGINAL_AVAILABLE:
-                        output_file = generer_rapport_minsante(
-                            df_appels=df_appels,
-                            df_calendrier=df_calendrier,
-                            semaine=semaine_selectionnee,
-                            output_path=str(output_path)
-                        )
-                    else:
-                        raise Exception("Générateur Original non disponible")
-                
-                elif st.session_state.modele_selectionne in ["A", "B"]:
-                    if ADVANCED_AVAILABLE:
-                        output_file = generer_rapport_avance(
-                            df_appels=df_appels,
-                            df_calendrier=df_calendrier,
-                            semaine=semaine_selectionnee,
-                            modele=st.session_state.modele_selectionne,
-                            output_path=str(output_path)
-                        )
-                    else:
-                        raise Exception("Générateur Avancé non disponible")
-                
-                # Calculer la durée
-                duree = (datetime.now() - start_time).total_seconds()
-                
-                # Vérifier que le fichier existe
-                if Path(output_file).exists():
-                    # Stocker les infos du rapport dans session_state
-                    st.session_state.rapport_genere = {
-                        'fichier': output_file,
-                        'nom': filename,
-                        'duree': duree,
-                        'taille': Path(output_file).stat().st_size / 1024 / 1024
-                    }
-                    
-                    st.success(f"✅ Rapport généré avec succès en {duree:.1f}s !")
-                    st.balloons()
-                    
-                    # Logs
-                    log_generation_rapport(
-                        modele=st.session_state.modele_selectionne,
-                        nb_slides=nb_slides,
-                        success=True,
-                        duree=duree
-                    )
-                    
-                else:
-                    raise Exception("Le fichier n'a pas été créé")
-            
-            except Exception as e:
-                st.error(f"❌ Erreur lors de la génération : {str(e)}")
-                
-                # Afficher le traceback pour le debugging
-                with st.expander("🔍 Détails de l'erreur"):
-                    st.code(traceback.format_exc())
-                
-                log_generation_rapport(
-                    modele=st.session_state.modele_selectionne,
-                    success=False,
-                    message=str(e)
-                )
-                logger.error(f"Erreur génération rapport : {str(e)}")
-    
-    # Afficher le bouton de téléchargement si un rapport a été généré
-    if st.session_state.rapport_genere:
-        st.markdown("---")
-        st.markdown("### 📥 Téléchargement")
-        
-        info = st.session_state.rapport_genere
-        
-        with open(info['fichier'], 'rb') as f:
-            st.download_button(
-                label="📥 TÉLÉCHARGER LE RAPPORT",
-                data=f,
-                file_name=info['nom'],
-                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                use_container_width=True,
-                type="primary"
-            )
-        
-        st.info(f"📊 Fichier : `{info['nom']}` ({info['taille']:.2f} MB) - Généré en {info['duree']:.1f}s")
-
-else:
-    # Aucun modèle sélectionné
-    if not ORIGINAL_AVAILABLE and not ADVANCED_AVAILABLE:
-        st.error("❌ Aucun générateur de rapport disponible. Vérifiez les fichiers dans utils/")
-    else:
-        st.info("👆 Sélectionnez un modèle de rapport ci-dessus pour commencer")
+    st.success(f"✅ Rapport pour la période **{info['periode']}** prêt au téléchargement")
 
 # ==============================================================================
-# SECTION 4 : HISTORIQUE DES RAPPORTS
+# SECTION 5 : HISTORIQUE DES RAPPORTS
 # ==============================================================================
 
-with st.expander("📂 Historique des Rapports Générés"):
+st.markdown("---")
+
+with st.expander("📂 Historique des Rapports Générés", expanded=False):
     
     st.markdown("### 📁 Rapports Disponibles")
     
@@ -477,83 +570,180 @@ with st.expander("📂 Historique des Rapports Générés"):
         )
         
         if fichiers_pptx:
-            st.info(f"📊 {len(fichiers_pptx)} rapport(s) disponible(s)")
+            st.info(f"📊 **{len(fichiers_pptx)} rapport(s) disponible(s)**")
             
-            for fichier in fichiers_pptx[:10]:  # Limiter à 10 derniers
-                col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
+            # Tableau des rapports
+            for idx, fichier in enumerate(fichiers_pptx[:15], 1):  # Limiter à 15 derniers
+                col1, col2, col3, col4, col5 = st.columns([1, 4, 2, 2, 1])
                 
                 stats = fichier.stat()
                 taille = stats.st_size / 1024 / 1024
                 date_modif = datetime.fromtimestamp(stats.st_mtime)
                 
                 with col1:
-                    st.write(f"📄 {fichier.name}")
+                    st.write(f"**#{idx}**")
                 
                 with col2:
-                    st.write(f"📏 {taille:.2f} MB")
+                    st.write(f"📄 {fichier.name[:50]}...")
                 
                 with col3:
-                    st.write(f"🕐 {date_modif.strftime('%d/%m/%Y %H:%M')}")
+                    st.write(f"📏 {taille:.2f} MB")
                 
                 with col4:
+                    st.write(f"🕐 {date_modif.strftime('%d/%m/%Y %H:%M')}")
+                
+                with col5:
                     with open(fichier, 'rb') as f:
                         st.download_button(
                             "📥",
                             data=f,
                             file_name=fichier.name,
                             mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                            key=f"download_{fichier.name}"
+                            key=f"download_{idx}_{fichier.name}",
+                            help="Télécharger ce rapport"
                         )
                 
-                st.markdown("---")
+                if idx < len(fichiers_pptx):
+                    st.markdown("---")
         else:
-            st.info("Aucun rapport généré pour le moment")
+            st.info("📭 Aucun rapport généré pour le moment")
     else:
-        st.warning("Dossier outputs/ introuvable")
+        st.warning("⚠️ Dossier outputs/ introuvable")
 
 # ==============================================================================
-# GUIDE D'UTILISATION
+# SECTION 6 : GUIDE D'UTILISATION
 # ==============================================================================
 
-with st.expander("ℹ️ Guide d'Utilisation"):
+with st.expander("ℹ️ Guide d'Utilisation", expanded=False):
     st.markdown("""
     ### 📖 Comment générer un rapport ?
     
-    **Étape 1 : Sélection du Modèle**
-    - Cliquez sur "Sélectionner" sous le modèle souhaité
-    - Chaque modèle a un format et un nombre de slides différent
+    **Étape 1 : Choisir le Mode de Sélection**
+    
+    🔹 **Mode Semaine** : Sélectionner une semaine épidémiologique complète
+    - Parfait pour les rapports hebdomadaires standards
+    - Période pré-définie (du lundi au dimanche)
+    
+    🔹 **Mode Période Personnalisée** : Choisir n'importe quelle période
+    - Jour de début et jour de fin libres
+    - Parfait pour des analyses sur mesure
+    - Exemples : du 1er au 15, du 10 au 20, etc.
     
     **Étape 2 : Configuration**
-    - Choisissez la semaine épidémiologique
-    - Configurez les options selon le modèle
+    
+    - **Mode Semaine** : Sélectionnez la semaine dans la liste déroulante
+    - **Mode Période** : Choisissez la date de début et la date de fin
     
     **Étape 3 : Génération**
-    - Cliquez sur "GÉNÉRER LE RAPPORT"
+    
+    - Vérifiez le récapitulatif de la configuration
+    - Cliquez sur "GÉNÉRER LE RAPPORT POWERPOINT"
     - Attendez 20-40 secondes
     - Téléchargez le fichier PowerPoint
     
-    ### 📊 Descriptions des Modèles
+    ### 📊 Contenu du Rapport (7 Slides)
     
-    **Modèle Original (7 slides)**
-    - Format standard MINSANTE
-    - Adapté aux présentations officielles
-    - Durée : ~25 secondes
+    **Slide 1 : Page de Titre**
+    - Drapeau du Cameroun
+    - Titre du rapport
+    - Date de la période
     
-    **Modèle A (16 slides)**
-    - Analyse détaillée et complète
-    - Pour les rapports approfondis
-    - Durée : ~40 secondes
+    **Slide 2 : Faits Saillants**
+    - Total des appels
+    - 3 graphiques camembert optimisés :
+      - Renseignements Santé (palette bleue)
+      - Assistances Médicales (palette rouge)
+      - Signaux de Surveillance (palette violette)
+    - Étiquettes avec pourcentages et valeurs
     
-    **Modèle B (12 slides)**
-    - Format condensé et synthétique
-    - Pour les présentations rapides
-    - Durée : ~30 secondes
+    **Slide 3 : Comparaison**
+    - Tableau de comparaison avec la période précédente
+    - Évolution par catégorie
     
-    ### 💡 Conseils
-    - Générez les rapports avant les réunions
-    - Conservez les versions historiques
-    - Vérifiez les données avant génération
+    **Slide 4 : Évolution**
+    - Graphique en colonnes avec tri automatique
+    - Étiquettes de données
+    - Tendances visuelles
+    
+    **Slide 5 : Questions d'Intérêt**
+    - Top 5 questions posées au 1510
+    - Formatage professionnel
+    
+    **Slide 6 : Activités**
+    - Tableau 2x2 : Activités menées / Activités planifiées
+    - Vision synthétique des actions
+    
+    **Slide 7 : Remerciements**
+    - Slide de clôture
+    - Fond vert Cameroun
+    
+    ### 🎨 Améliorations Graphiques v4.0
+    
+    ✨ **Couleurs optimisées pour PowerPoint**
+    - Palettes vives et contrastées
+    - Différenciation visuelle par thématique
+    
+    ✨ **Étiquettes améliorées**
+    - Pourcentages + Valeurs affichés
+    - Police blanche en gras pour contraste
+    - Position optimisée (INSIDE_END)
+    
+    ✨ **Légendes professionnelles**
+    - Placement en bas
+    - Taille de police adaptée
+    - Ne surcharge pas le graphique
+    
+    ### 💡 Conseils d'Utilisation
+    
+    ✅ **Pour les rapports hebdomadaires standards**
+    - Utilisez le mode "Semaine"
+    - Générez le rapport chaque semaine
+    
+    ✅ **Pour des analyses spécifiques**
+    - Utilisez le mode "Période"
+    - Choisissez n'importe quelle plage de dates
+    - Exemples : début/fin de mois, périodes de pics, etc.
+    
+    ✅ **Avant une présentation**
+    - Générez le rapport à l'avance
+    - Vérifiez les données
+    - Conservez plusieurs versions dans l'historique
+    
+    ### 🔧 Dépannage
+    
+    **Le rapport ne se génère pas ?**
+    - Vérifiez que la période contient des données
+    - Vérifiez que les fichiers sont bien chargés
+    - Consultez les détails de l'erreur
+    
+    **Le téléchargement ne fonctionne pas ?**
+    - Vérifiez votre navigateur
+    - Réessayez la génération
+    - Consultez l'historique des rapports
+    
+    **Les graphiques sont vides ?**
+    - Vérifiez que la période contient des appels
+    - Certaines catégories peuvent être à zéro
+    
+    ### 📞 Support
+    
+    Pour toute question ou assistance :
+    - Consultez la documentation technique
+    - Contactez l'équipe MINSANTE/CCOUSP
     """)
+
+# ==============================================================================
+# FOOTER
+# ==============================================================================
+
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #666; padding: 20px;'>
+    <p><strong>Dashboard Centre d'Appels d'Urgence Sanitaire 1510</strong></p>
+    <p>Centre de Coordination des Urgences de Santé Publique (CCOUSP) - MINSANTE</p>
+    <p>Version 4.0 - Décembre 2025</p>
+</div>
+""", unsafe_allow_html=True)
 
 # ==============================================================================
 # FIN DE LA PAGE
