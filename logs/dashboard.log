@@ -721,3 +721,91 @@ ValueError: Colonnes essentielles manquantes : Week_No, Week_Label, Date_Start
 2025-12-14 11:18:24 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
 2025-12-14 11:18:24 - pptx_generator - INFO - ✅ Rapport Modèle MINSANTE_OPTIMISE généré: 7 slides en 0.1s
 2025-12-14 11:18:27 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-15 09:46:17 - app - INFO - Logger 'app' initialisé - Niveau: INFO
+2025-12-15 09:46:17 - app - INFO - === Page d'accueil chargée ===
+2025-12-15 09:46:18 - data_loader - INFO - Logger 'data_loader' initialisé - Niveau: INFO
+2025-12-15 09:46:18 - data_loader - INFO - ✅ Chargement réussi : Toutes les données (308 lignes)
+2025-12-15 09:46:39 - comparaisons - INFO - Logger 'comparaisons' initialisé - Niveau: INFO
+2025-12-15 09:46:39 - comparaisons - INFO - === Page Comparaisons chargée ===
+2025-12-15 09:59:28 - comparaisons - INFO - === Page Comparaisons chargée ===
+2025-12-15 09:59:29 - app - INFO - === Page d'accueil chargée ===
+2025-12-17 08:46:31 - app - INFO - Logger 'app' initialisé - Niveau: INFO
+2025-12-17 08:46:31 - app - INFO - === Page d'accueil chargée ===
+2025-12-17 08:46:32 - data_loader - INFO - Logger 'data_loader' initialisé - Niveau: INFO
+2025-12-17 08:46:32 - data_loader - INFO - ✅ Chargement réussi : Toutes les données (308 lignes)
+2025-12-17 08:46:39 - donnees_brutes - INFO - Logger 'donnees_brutes' initialisé - Niveau: INFO
+2025-12-17 08:46:39 - donnees_brutes - INFO - === Page Données Brutes chargée ===
+2025-12-17 08:46:57 - vue_ensemble - INFO - Logger 'vue_ensemble' initialisé - Niveau: INFO
+2025-12-17 08:46:57 - vue_ensemble - INFO - === Page Vue d'Ensemble chargée ===
+2025-12-17 08:47:12 - donnees_brutes - INFO - === Page Données Brutes chargée ===
+2025-12-17 08:47:14 - generation_rapports - INFO - Logger 'generation_rapports' initialisé - Niveau: INFO
+2025-12-17 08:47:14 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-17 08:47:27 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-17 08:47:28 - pptx_generator - INFO - Logger 'pptx_generator' initialisé - Niveau: INFO
+2025-12-17 08:47:28 - pptx_generator - INFO - ✅ Rapport Modèle MINSANTE_OPTIMISE généré: 7 slides en 0.2s
+2025-12-17 08:47:31 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-17 09:18:13 - app - INFO - Logger 'app' initialisé - Niveau: INFO
+2025-12-17 09:18:13 - app - INFO - === Page d'accueil chargée ===
+2025-12-17 09:18:13 - data_loader - INFO - Logger 'data_loader' initialisé - Niveau: INFO
+2025-12-17 09:18:13 - data_loader - INFO - ✅ Chargement réussi : Toutes les données (308 lignes)
+2025-12-17 09:18:18 - donnees_brutes - INFO - Logger 'donnees_brutes' initialisé - Niveau: INFO
+2025-12-17 09:18:18 - donnees_brutes - INFO - === Page Données Brutes chargée ===
+2025-12-17 09:18:21 - generation_rapports - INFO - Logger 'generation_rapports' initialisé - Niveau: INFO
+2025-12-17 09:18:21 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-17 09:18:37 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-17 09:18:38 - pptx_generator - INFO - Logger 'pptx_generator' initialisé - Niveau: INFO
+2025-12-17 09:18:38 - pptx_generator - INFO - ✅ Rapport Modèle MINSANTE_OPTIMISE généré: 7 slides en 0.2s
+2025-12-17 09:18:41 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-17 09:24:37 - app - INFO - Logger 'app' initialisé - Niveau: INFO
+2025-12-17 09:24:37 - app - INFO - === Page d'accueil chargée ===
+2025-12-17 09:24:37 - data_loader - INFO - Logger 'data_loader' initialisé - Niveau: INFO
+2025-12-17 09:24:37 - data_loader - INFO - ✅ Chargement réussi : Toutes les données (308 lignes)
+2025-12-17 09:24:39 - generation_rapports - INFO - Logger 'generation_rapports' initialisé - Niveau: INFO
+2025-12-17 09:24:39 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-17 09:24:42 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-17 09:24:42 - pptx_generator - INFO - Logger 'pptx_generator' initialisé - Niveau: INFO
+2025-12-17 09:24:42 - pptx_generator - INFO - ✅ Rapport Modèle MINSANTE_OPTIMISE généré: 7 slides en 0.2s
+2025-12-17 09:24:45 - generation_rapports - INFO - === Page Génération de Rapports v4.0 chargée ===
+2025-12-17 09:40:41 - app - INFO - Logger 'app' initialisé - Niveau: INFO
+2025-12-17 09:40:41 - app - INFO - === Page d'accueil chargée ===
+2025-12-17 09:40:41 - data_loader - INFO - Logger 'data_loader' initialisé - Niveau: INFO
+2025-12-17 09:40:41 - data_loader - INFO - ✅ Chargement réussi : Toutes les données (308 lignes)
+2025-12-17 09:40:50 - donnees_brutes - INFO - Logger 'donnees_brutes' initialisé - Niveau: INFO
+2025-12-17 09:40:50 - donnees_brutes - INFO - === Page Données Brutes chargée ===
+2025-12-17 09:40:56 - generation_rapports - INFO - Logger 'generation_rapports' initialisé - Niveau: INFO
+2025-12-17 09:40:56 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 09:41:23 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 09:41:23 - pptx_generator - INFO - Logger 'pptx_generator' initialisé - Niveau: INFO
+2025-12-17 09:41:23 - pptx_generator - INFO - ✅ Rapport Modèle MINSANTE_OPTIMISE généré: 7 slides en 0.2s
+2025-12-17 09:41:28 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 09:43:00 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 09:43:03 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 09:43:04 - pptx_generator - INFO - ✅ Rapport Modèle MINSANTE_OPTIMISE généré: 7 slides en 0.2s
+2025-12-17 09:43:11 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:23:02 - app - INFO - Logger 'app' initialisé - Niveau: INFO
+2025-12-17 10:23:02 - app - INFO - === Page d'accueil chargée ===
+2025-12-17 10:23:02 - data_loader - INFO - Logger 'data_loader' initialisé - Niveau: INFO
+2025-12-17 10:23:02 - data_loader - INFO - ✅ Chargement réussi : Toutes les données (308 lignes)
+2025-12-17 10:23:15 - vue_ensemble - INFO - Logger 'vue_ensemble' initialisé - Niveau: INFO
+2025-12-17 10:23:15 - vue_ensemble - INFO - === Page Vue d'Ensemble chargée ===
+2025-12-17 10:23:32 - analyse_epidemiologique - INFO - Logger 'analyse_epidemiologique' initialisé - Niveau: INFO
+2025-12-17 10:23:32 - analyse_epidemiologique - INFO - === Page Analyse Épidémiologique chargée ===
+2025-12-17 10:23:46 - comparaisons - INFO - Logger 'comparaisons' initialisé - Niveau: INFO
+2025-12-17 10:23:46 - comparaisons - INFO - === Page Comparaisons chargée ===
+2025-12-17 10:23:52 - donnees_brutes - INFO - Logger 'donnees_brutes' initialisé - Niveau: INFO
+2025-12-17 10:23:52 - donnees_brutes - INFO - === Page Données Brutes chargée ===
+2025-12-17 10:23:56 - generation_rapports - INFO - Logger 'generation_rapports' initialisé - Niveau: INFO
+2025-12-17 10:23:56 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:24:04 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:24:04 - pptx_generator - INFO - Logger 'pptx_generator' initialisé - Niveau: INFO
+2025-12-17 10:24:04 - pptx_generator - INFO - ✅ Rapport Modèle MINSANTE_OPTIMISE généré: 7 slides en 0.2s
+2025-12-17 10:24:17 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:34:09 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:34:09 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:34:30 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:34:44 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:34:52 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:35:07 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:35:35 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===
+2025-12-17 10:35:35 - pptx_generator - INFO - ✅ Rapport Modèle MINSANTE_OPTIMISE généré: 7 slides en 0.2s
+2025-12-17 10:35:38 - generation_rapports - INFO - === Page Génération de Rapports v4.1 chargée ===

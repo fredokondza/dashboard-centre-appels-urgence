@@ -1,9 +1,13 @@
 """
 ==============================================================================
-MODULE DE TRAITEMENT DES DONNÉES
+MODULE DE TRAITEMENT DES DONNÉES - VERSION CORRIGÉE
 ==============================================================================
 Ce module gère le traitement, l'agrégation et les calculs statistiques
 des données pour le Dashboard Centre d'Appels d'Urgence.
+
+CORRECTION v2.2 :
+- comparer_periodes() : Affiche par REGROUPEMENTS au lieu de par catégories
+  Résultat : 6 lignes (5 regroupements + TOTAL) au lieu de 18 lignes
 
 Fonctions principales :
 - calculer_totaux_hebdomadaires() : Agrégation par semaine
@@ -13,10 +17,11 @@ Fonctions principales :
 - obtenir_statistiques_globales() : Stats descriptives
 - regrouper_par_mois() : Conversion semaines → mois
 - calculer_top_categories() : Top N des catégories
+- comparer_periodes() : Comparaison multi-périodes [CORRIGÉE]
 
 Auteur: Fred - AIMS Cameroon / MINSANTE
-Date: Décembre 2025
-Version: 2.1 - Ajout calculer_top_categories
+Date: 17 Décembre 2025
+Version: 2.2 - Correction comparer_periodes (regroupements)
 ==============================================================================
 """
 
@@ -289,8 +294,8 @@ def calculer_regroupements(df_data):
     Les 5 regroupements définis dans la configuration :
     - Renseignements Santé
     - Assistances Médicales
+    - Assistances Psycho-Sociales
     - Signaux d'Alerte
-    - Appels Indésirables
     - Autres Appels
     
     Args:
@@ -593,12 +598,13 @@ def calculer_top_categories(df_data, nb_top=10):
         raise
 
 # ==============================================================================
-# FONCTION BONUS : COMPARAISON MULTI-PÉRIODES
+# FONCTION 8 : COMPARAISON MULTI-PÉRIODES [CORRIGÉE]
 # ==============================================================================
 
 def comparer_periodes(df_appels, liste_semaines):
     """
     Compare plusieurs semaines simultanément.
+    VERSION CORRIGÉE v2.2 : Affiche par REGROUPEMENTS au lieu de par catégories.
     
     Args:
         df_appels (pd.DataFrame): Données journalières
@@ -606,29 +612,40 @@ def comparer_periodes(df_appels, liste_semaines):
     
     Returns:
         pd.DataFrame: Tableau comparatif avec :
-            - Une ligne par catégorie
+            - Une ligne par regroupement (5 lignes au lieu de 17)
             - Une colonne par semaine
+            - Une ligne TOTAL
     
     Example:
-        >>> df_comp = comparer_periodes(df, ['S8_2025', 'S9_2025', 'S10_2025'])
+        >>> df_comp = comparer_periodes(df, ['S46_2025', 'S47_2025'])
         >>> print(df_comp)
+        # Résultat : 6 lignes (5 regroupements + TOTAL)
+        #   1. Renseignements Santé
+        #   2. Assistances Médicales
+        #   3. Assistances Psycho-Sociales
+        #   4. Signaux d'Alerte
+        #   5. Autres Appels
+        #   6. TOTAL
     """
     try:
         donnees_comparaison = []
         
-        # Pour chaque catégorie
-        for categorie in settings.CATEGORIES_APPELS:
-            if categorie not in df_appels.columns:
-                continue
-            
+        # ✅ CORRECTION : Boucler sur les REGROUPEMENTS (au lieu des catégories)
+        for nom_groupe, categories in settings.REGROUPEMENTS.items():
             ligne = {
-                'Catégorie': settings.LABELS_CATEGORIES.get(categorie, categorie)
+                'Catégorie': settings.LABELS_REGROUPEMENTS.get(nom_groupe, nom_groupe)
             }
             
             # Pour chaque semaine
             for semaine in liste_semaines:
                 df_sem = df_appels[df_appels['Semaine épidémiologique'] == semaine]
-                total = int(df_sem[categorie].sum()) if len(df_sem) > 0 else 0
+                
+                # Sommer toutes les catégories du regroupement
+                total = 0
+                for categorie in categories:
+                    if categorie in df_sem.columns:
+                        total += int(df_sem[categorie].sum())
+                
                 ligne[semaine] = total
             
             donnees_comparaison.append(ligne)
@@ -645,6 +662,8 @@ def comparer_periodes(df_appels, liste_semaines):
             df_comparaison,
             pd.DataFrame([ligne_totaux])
         ], ignore_index=True)
+        
+        print(f"✅ Comparaison : {len(df_comparaison)} lignes (5 regroupements + TOTAL)")
         
         return df_comparaison
         

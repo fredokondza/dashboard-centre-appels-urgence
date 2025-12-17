@@ -1,202 +1,102 @@
 """
 ==============================================================================
-GÉNÉRATEUR DE PRÉSENTATIONS POWERPOINT - MODÈLE MINSANTE
+GÉNÉRATEUR POWERPOINT - MODÈLE MINSANTE
 ==============================================================================
-Module pour générer automatiquement des présentations PowerPoint
-suivant le modèle officiel du Centre d'Appels d'Urgence MINSANTE.
+Basé EXACTEMENT sur Situation_Centre_Appel_27-11-2025.pptx
+Toutes les positions et dimensions sont reproduites à l'identique
 
-VERSION FINALE - Code original (document 3) + Wrapper pour nouvelle architecture
-
-Auteur: Fred - AIMS Cameroon / MINSANTE
-Date: Décembre 2025
+Auteur: Fred - AIMS Cameroon / MINSANTE  
+Date: 14 Décembre 2025
+Version: 7.0 FINAL - Positions exactes du template
 ==============================================================================
 """
 
 from pptx import Presentation
 from pptx.util import Inches, Pt
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_AUTO_SIZE
+from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 from pptx.chart.data import CategoryChartData
 from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION
-from pptx.enum.dml import MSO_THEME_COLOR
 from datetime import datetime
 import pandas as pd
-import io
 from pathlib import Path
-from PIL import Image
 
 
 class MinsantePPTXGenerator:
-    """Classe pour générer des présentations PowerPoint selon le modèle MINSANTE."""
+    """Générateur PowerPoint MINSANTE - Template 27-11-2025"""
     
-    def __init__(self, template_path=None, drapeau_path=None):
-        """
-        Initialise le générateur de présentation.
+    def __init__(self):
+        """Initialise le générateur"""
+        self.prs = Presentation()
+        self.prs.slide_width = Inches(13.33)
+        self.prs.slide_height = Inches(7.5)
         
-        Args:
-            template_path (str): Chemin vers le template .pptx (optionnel)
-            drapeau_path (str): Chemin vers l'image du drapeau (optionnel)
-        """
-        if template_path:
-            self.prs = Presentation(template_path)
-        else:
-            self.prs = Presentation()
-            self.prs.slide_width = Inches(13.33)
-            self.prs.slide_height = Inches(7.5)
-        
-        # Chemin du drapeau - chercher dans plusieurs emplacements
-        if drapeau_path and Path(drapeau_path).exists():
-            self.drapeau_path = Path(drapeau_path)
-        else:
-            # Chercher dans data/, assets/, uploads/
-            possible_paths = [
-                Path(__file__).parent.parent / "data" / "Flag_of_Cameroon.svg",
-                Path(__file__).parent.parent / "data" / "Flag_of_Cameroon.png",
-                Path(__file__).parent.parent / "assets" / "Flag_of_Cameroon.svg",
-                Path(__file__).parent.parent / "assets" / "Flag_of_Cameroon.png",
-                Path("/mnt/user-data/uploads/Flag_of_Cameroon.svg"),
-                Path("/mnt/user-data/uploads/Flag_of_Cameroon.png"),
-            ]
-            
-            self.drapeau_path = None
-            for path in possible_paths:
-                if path.exists():
-                    self.drapeau_path = path
-                    print(f"✅ Drapeau trouvé : {path}")
-                    break
-            
-            if not self.drapeau_path:
-                print("⚠️ Drapeau non trouvé, utilisation d'un placeholder")
-        
-        # Couleurs du thème MINSANTE/Cameroun
-        self.color_vert = RGBColor(0, 122, 51)         # Vert Cameroun
-        self.color_jaune = RGBColor(255, 215, 0)       # Jaune Cameroun
-        self.color_rouge = RGBColor(206, 17, 38)       # Rouge Cameroun
+        # Couleurs MINSANTE
+        self.color_vert = RGBColor(0, 122, 51)
+        self.color_jaune = RGBColor(255, 215, 0)
+        self.color_rouge = RGBColor(206, 17, 38)
         self.color_white = RGBColor(255, 255, 255)
         self.color_dark = RGBColor(33, 37, 41)
         self.color_gray = RGBColor(108, 117, 125)
-        self.color_lightgray = RGBColor(233, 236, 239)
         self.color_blue = RGBColor(13, 110, 253)
-    
-    def _convertir_svg_en_png(self, svg_path):
-        """
-        Convertit un fichier SVG en PNG.
         
-        Args:
-            svg_path (Path): Chemin vers le fichier SVG
-        
-        Returns:
-            BytesIO: Image PNG en bytes
-        """
-        try:
-            import cairosvg
-            # Convertir SVG en PNG avec cairosvg
-            png_data = cairosvg.svg2png(
-                url=str(svg_path),
-                output_width=800,
-                output_height=533
-            )
-            return io.BytesIO(png_data)
-        
-        except ImportError:
-            print("⚠️ cairosvg non installé, tentative avec PIL")
-            try:
-                from PIL import Image
-                img = Image.open(svg_path)
-                img = img.resize((800, 533), Image.Resampling.LANCZOS)
-                img_bytes = io.BytesIO()
-                img.save(img_bytes, format='PNG')
-                img_bytes.seek(0)
-                return img_bytes
-            except Exception as e:
-                print(f"❌ Erreur PIL : {e}")
-                return None
-        
-        except Exception as e:
-            print(f"❌ Erreur lors de la conversion SVG: {e}")
-            return None
-    
-    def _obtenir_image_drapeau(self):
-        """
-        Obtient l'image du drapeau (SVG ou PNG).
-        
-        Returns:
-            BytesIO: Image du drapeau en bytes
-        """
-        if not self.drapeau_path or not self.drapeau_path.exists():
-            print("⚠️ Fichier du drapeau introuvable")
-            return None
-        
-        # Si c'est un SVG, le convertir en PNG
-        if self.drapeau_path.suffix.lower() == '.svg':
-            return self._convertir_svg_en_png(self.drapeau_path)
-        
-        # Si c'est déjà un PNG/JPG, le lire directement
-        else:
-            try:
-                with open(self.drapeau_path, 'rb') as f:
-                    return io.BytesIO(f.read())
-            except Exception as e:
-                print(f"❌ Erreur lecture image : {e}")
-                return None
+        # Drapeau (optionnel)
+        self.drapeau_path = None
+        possible_paths = [
+            Path("data/Flag_of_Cameroon.png"),
+            Path("data/Flag_of_Cameroon.svg"),
+        ]
+        for p in possible_paths:
+            if p.exists():
+                self.drapeau_path = p
+                break
     
     def slide_1_titre(self, date_rapport):
-        """Génère la Slide 1 : Page de titre avec drapeau du Cameroun"""
-        slide_layout = self.prs.slide_layouts[6]
-        slide = self.prs.slides.add_slide(slide_layout)
+        """SLIDE 1 : Titre avec drapeau"""
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
         
-        # Ajouter le vrai drapeau du Cameroun
-        drapeau_bytes = self._obtenir_image_drapeau()
-        
-        if drapeau_bytes:
+        # [1] DRAPEAU - left=7.50", top=1.50", width=5.00", height=3.33"
+        if self.drapeau_path:
             try:
-                left_drapeau = Inches(7.5)
-                top_drapeau = Inches(1.5)
-                width_drapeau = Inches(5.0)
-                
-                pic = slide.shapes.add_picture(
-                    drapeau_bytes,
-                    left_drapeau,
-                    top_drapeau,
-                    width=width_drapeau
+                slide.shapes.add_picture(
+                    str(self.drapeau_path),
+                    Inches(7.5), Inches(1.5),
+                    width=Inches(5.0), height=Inches(3.33)
                 )
-                print("✅ Drapeau ajouté à la slide 1")
-            except Exception as e:
-                print(f"❌ Erreur lors de l'ajout du drapeau: {e}")
-        else:
-            print("⚠️ Drapeau non ajouté - fichier introuvable ou erreur de conversion")
+            except:
+                pass
         
-        # Bande verte en haut
-        shape = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(13.33), Inches(0.8))
+        # [2] BANDE VERTE - left=0.00", top=0.00", width=13.33", height=0.80"
+        shape = slide.shapes.add_shape(
+            1, Inches(0), Inches(0), Inches(13.33), Inches(0.8)
+        )
         shape.fill.solid()
         shape.fill.fore_color.rgb = self.color_vert
         shape.line.fill.background()
         
-        # Logo/Titre MINSANTE dans la bande verte
-        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.15), Inches(8), Inches(0.5))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
+        # [3] TEXTE MINSANTE - left=0.50", top=0.15", width=8.00", height=0.50"
+        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.15), Inches(8.0), Inches(0.5))
+        p = txBox.text_frame.paragraphs[0]
         p.text = "MINISTÈRE DE LA SANTÉ PUBLIQUE - RÉPUBLIQUE DU CAMEROUN"
         p.font.size = Pt(16)
         p.font.bold = True
         p.font.color.rgb = self.color_white
         p.alignment = PP_ALIGN.LEFT
         
-        # Titre principal - SITUATION
+        # [4] SITUATION - left=0.80", top=2.00", width=6.00", height=1.50"
         txBox = slide.shapes.add_textbox(Inches(0.8), Inches(2.0), Inches(6.0), Inches(1.5))
-        tf = txBox.text_frame
-        tf.word_wrap = True
-        p = tf.paragraphs[0]
+        p = txBox.text_frame.paragraphs[0]
         run = p.add_run()
         run.text = "SITUATION"
         run.font.size = Pt(60)
         run.font.bold = True
         run.font.color.rgb = self.color_vert
         
-        # Sous-titre - DU CENTRE D'APPELS
+        # [5] SOUS-TITRE - left=0.80", top=3.50", width=6.50", height=2.00"
         txBox = slide.shapes.add_textbox(Inches(0.8), Inches(3.5), Inches(6.5), Inches(2.0))
         tf = txBox.text_frame
         tf.word_wrap = True
+        
         p = tf.paragraphs[0]
         run = p.add_run()
         run.text = "DU CENTRE D'APPELS\nD'URGENCE SANITAIRE\n"
@@ -204,7 +104,6 @@ class MinsantePPTXGenerator:
         run.font.bold = True
         run.font.color.rgb = self.color_dark
         
-        # Date du rapport
         p2 = tf.add_paragraph()
         run2 = p2.add_run()
         run2.text = f"\nau {date_rapport}"
@@ -212,145 +111,126 @@ class MinsantePPTXGenerator:
         run2.font.bold = False
         run2.font.color.rgb = self.color_rouge
         
-        # Pied de page
+        # [6] PIED DE PAGE - left=0.50", top=6.80", width=12.33", height=0.50"
         txBox = slide.shapes.add_textbox(Inches(0.5), Inches(6.8), Inches(12.33), Inches(0.5))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
+        p = txBox.text_frame.paragraphs[0]
         p.text = "Centre d'Appels d'Urgence Sanitaire - Numéro d'urgence : 1510"
         p.font.size = Pt(14)
         p.font.color.rgb = self.color_gray
         p.alignment = PP_ALIGN.CENTER
     
-    def slide_2_faits_saillants(self, periode, total_appels, 
-                                 renseignements_data, assistance_data, 
-                                 signaux_data, autres_data):
-        """Génère la Slide 2 : Faits saillants avec graphiques"""
-        slide_layout = self.prs.slide_layouts[6]
-        slide = self.prs.slides.add_slide(slide_layout)
+    def slide_2_faits_saillants(self, periode, total_appels, renseignements_data, 
+                                 assistance_data, signaux_data, autres_data):
+        """SLIDE 2 : Faits saillants avec 3 graphiques"""
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
         
-        # Bande verte en haut avec titre
+        # [1] BANDE VERTE
         shape = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(13.33), Inches(1.0))
         shape.fill.solid()
         shape.fill.fore_color.rgb = self.color_vert
         shape.line.fill.background()
         
-        # Titre dans la bande
-        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.2), Inches(12), Inches(0.6))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
+        # [2] TITRE
+        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.2), Inches(12.0), Inches(0.6))
+        p = txBox.text_frame.paragraphs[0]
         p.text = f"FAITS SAILLANTS DU {periode.upper()}"
         p.font.size = Pt(32)
         p.font.bold = True
         p.font.color.rgb = self.color_white
         p.alignment = PP_ALIGN.CENTER
         
-        # Texte principal - Total des appels
-        txBox = slide.shapes.add_textbox(Inches(0.8), Inches(1.3), Inches(12), Inches(0.6))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
+        # [3] TOTAL APPELS
+        txBox = slide.shapes.add_textbox(Inches(0.8), Inches(1.3), Inches(12.0), Inches(0.6))
+        p = txBox.text_frame.paragraphs[0]
         p.text = f"📞 {total_appels:,} NOUVEAUX APPELS REÇUS".replace(",", " ")
         p.font.size = Pt(28)
         p.font.bold = True
         p.font.color.rgb = self.color_rouge
         p.alignment = PP_ALIGN.CENTER
         
-        # Statistiques textuelles
-        total_renseignements = sum(renseignements_data.values()) if renseignements_data else 0
-        total_assistance = sum(assistance_data.values()) if assistance_data else 0
-        total_signaux = sum(signaux_data.values()) if signaux_data else 0
+        # [4] STATISTIQUES
+        total_rens = sum(renseignements_data.values()) if renseignements_data else 0
+        total_assist = sum(assistance_data.values()) if assistance_data else 0
+        total_sig = sum(signaux_data.values()) if signaux_data else 0
         
-        txBox = slide.shapes.add_textbox(Inches(0.8), Inches(2.0), Inches(12), Inches(0.5))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
-        stats_text = f"🏥 {total_renseignements} Renseignements Santé  |  "
-        stats_text += f"🚑 {total_assistance} Assistances Médicales  |  "
-        stats_text += f"📡 {total_signaux} Signaux de Surveillance"
-        p.text = stats_text
+        txBox = slide.shapes.add_textbox(Inches(0.8), Inches(2.0), Inches(12.0), Inches(0.5))
+        p = txBox.text_frame.paragraphs[0]
+        p.text = f"🏥 {total_rens} Renseignements Santé  |  🚑 {total_assist} Assistances Médicales  |  📡 {total_sig} Signaux de Surveillance"
         p.font.size = Pt(16)
         p.font.color.rgb = self.color_dark
         p.alignment = PP_ALIGN.CENTER
         
-        # Ligne de séparation
+        # [5] LIGNE JAUNE
         shape = slide.shapes.add_shape(1, Inches(1.5), Inches(2.6), Inches(10.33), Inches(0.02))
         shape.fill.solid()
         shape.fill.fore_color.rgb = self.color_jaune
         shape.line.fill.background()
         
-        # Graphiques - TOUJOURS générés
-        if renseignements_data:
-            self._ajouter_graphique_camembert(
-                slide, renseignements_data,
-                left=Inches(0.8), top=Inches(3.0), width=Inches(3.8), height=Inches(3.8),
-                titre="🏥 Renseignements Santé", couleur=self.color_vert
-            )
+        # [6] TITRE GRAPHIQUE 1
+        txBox = slide.shapes.add_textbox(Inches(0.8), Inches(2.7), Inches(3.8), Inches(0.25))
+        p = txBox.text_frame.paragraphs[0]
+        p.text = "🏥 Renseignements Santé"
+        p.font.size = Pt(14)
+        p.font.bold = True
+        p.font.color.rgb = self.color_vert
+        p.alignment = PP_ALIGN.CENTER
         
-        if assistance_data:
-            self._ajouter_graphique_camembert(
-                slide, assistance_data,
-                left=Inches(4.8), top=Inches(3.0), width=Inches(3.8), height=Inches(3.8),
-                titre="🚑 Assistances Médicales", couleur=self.color_rouge
-            )
+        # [7] GRAPHIQUE 1
+        self._add_pie_chart(slide, renseignements_data, 
+                           Inches(0.8), Inches(3.0), Inches(3.8), Inches(3.8))
         
-        if signaux_data:
-            self._ajouter_graphique_camembert(
-                slide, signaux_data,
-                left=Inches(8.8), top=Inches(3.0), width=Inches(3.8), height=Inches(3.8),
-                titre="📡 Signaux de Surveillance", couleur=self.color_blue
-            )
+        # [8] TITRE GRAPHIQUE 2
+        txBox = slide.shapes.add_textbox(Inches(4.8), Inches(2.7), Inches(3.8), Inches(0.25))
+        p = txBox.text_frame.paragraphs[0]
+        p.text = "🚑 Assistances Médicales"
+        p.font.size = Pt(14)
+        p.font.bold = True
+        p.font.color.rgb = self.color_rouge
+        p.alignment = PP_ALIGN.CENTER
         
-        # Appels sortants (pied de page)
-        txBox = slide.shapes.add_textbox(Inches(0.8), Inches(7.0), Inches(12), Inches(0.3))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
+        # [9] GRAPHIQUE 2
+        self._add_pie_chart(slide, assistance_data,
+                           Inches(4.8), Inches(3.0), Inches(3.8), Inches(3.8))
+        
+        # [10] TITRE GRAPHIQUE 3
+        txBox = slide.shapes.add_textbox(Inches(8.8), Inches(2.7), Inches(3.8), Inches(0.25))
+        p = txBox.text_frame.paragraphs[0]
+        p.text = "📡 Signaux de Surveillance"
+        p.font.size = Pt(14)
+        p.font.bold = True
+        p.font.color.rgb = self.color_blue
+        p.alignment = PP_ALIGN.CENTER
+        
+        # [11] GRAPHIQUE 3
+        self._add_pie_chart(slide, signaux_data,
+                           Inches(8.8), Inches(3.0), Inches(3.8), Inches(3.8))
+        
+        # [12] PIED DE PAGE
+        txBox = slide.shapes.add_textbox(Inches(0.8), Inches(7.0), Inches(12.0), Inches(0.3))
+        p = txBox.text_frame.paragraphs[0]
         p.text = f"📞 {autres_data.get('appels_sortants', 0)} appel(s) sortant(s) émis  |  ⚠️ {autres_data.get('total', 0)} autres appels"
         p.font.size = Pt(14)
         p.font.color.rgb = self.color_gray
         p.alignment = PP_ALIGN.CENTER
     
-    def _ajouter_graphique_camembert(self, slide, data_dict, left, top, width, height, titre="", couleur=None):
-        """Ajoute un graphique camembert professionnel."""
+    def _add_pie_chart(self, slide, data_dict, left, top, width, height):
+        """Ajoute un graphique camembert"""
         if not data_dict or sum(data_dict.values()) == 0:
-            txBox = slide.shapes.add_textbox(left, top, width, height)
-            tf = txBox.text_frame
-            p = tf.paragraphs[0]
-            p.text = f"{titre}\n\nAucune donnée disponible"
-            p.font.size = Pt(14)
-            p.font.color.rgb = self.color_gray
-            p.alignment = PP_ALIGN.CENTER
-            return
+            data_dict = {"Aucune donnée": 1}
         
-        # Ajouter le titre au-dessus du graphique
-        txBox = slide.shapes.add_textbox(left, top - Inches(0.3), width, Inches(0.25))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
-        p.text = titre
-        p.font.size = Pt(14)
-        p.font.bold = True
-        if couleur:
-            p.font.color.rgb = couleur
-        else:
-            p.font.color.rgb = self.color_dark
-        p.alignment = PP_ALIGN.CENTER
-        
-        # Créer les données du graphique
         chart_data = CategoryChartData()
         chart_data.categories = list(data_dict.keys())
-        chart_data.add_series('Série 1', list(data_dict.values()))
+        chart_data.add_series('Valeurs', list(data_dict.values()))
         
-        # Ajouter le graphique
         graphic_frame = slide.shapes.add_chart(
             XL_CHART_TYPE.PIE, left, top, width, height, chart_data
         )
         
         chart = graphic_frame.chart
+        chart.has_title = False
         chart.has_legend = True
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.font.size = Pt(9)
-        chart.legend.include_in_layout = False
-        
-        if chart.has_title:
-            chart.chart_title.text_frame.clear()
-            chart.has_title = False
         
         plot = chart.plots[0]
         plot.has_data_labels = True
@@ -360,51 +240,45 @@ class MinsantePPTXGenerator:
         data_labels.position = XL_LABEL_POSITION.OUTSIDE_END
     
     def slide_3_comparaison(self, semaine1, semaine2, df_comparaison):
-        """Génère la Slide 3 : Tableau de comparaison entre 2 semaines"""
-        slide_layout = self.prs.slide_layouts[6]
-        slide = self.prs.slides.add_slide(slide_layout)
+        """SLIDE 3 : Tableau de comparaison"""
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
         
-        # Bande verte en haut avec titre
+        # [1] BANDE VERTE
         shape = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(13.33), Inches(1.0))
         shape.fill.solid()
         shape.fill.fore_color.rgb = self.color_vert
         shape.line.fill.background()
         
-        # Titre
-        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.15), Inches(12), Inches(0.7))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
-        p.text = f"COMPARAISON DES APPELS"
+        # [2] TITRE
+        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.15), Inches(12.0), Inches(0.7))
+        p = txBox.text_frame.paragraphs[0]
+        p.text = "COMPARAISON DES APPELS"
         p.font.size = Pt(32)
         p.font.bold = True
         p.font.color.rgb = self.color_white
         p.alignment = PP_ALIGN.CENTER
         
-        # Sous-titre avec les semaines
+        # [3] SOUS-TITRE
         txBox = slide.shapes.add_textbox(Inches(1.0), Inches(1.2), Inches(11.33), Inches(0.4))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
+        p = txBox.text_frame.paragraphs[0]
         p.text = f"📊 {semaine1} vs {semaine2}"
         p.font.size = Pt(20)
         p.font.bold = True
         p.font.color.rgb = self.color_rouge
         p.alignment = PP_ALIGN.CENTER
         
-        # Créer le tableau
+        # [4] TABLEAU
         rows = len(df_comparaison) + 1
         cols = len(df_comparaison.columns)
         
-        table = slide.shapes.add_table(rows, cols, Inches(1.5), Inches(1.9), Inches(10.33), Inches(5.0)).table
+        table = slide.shapes.add_table(
+            rows, cols, Inches(1.5), Inches(1.9), Inches(10.32), Inches(5.0)
+        ).table
         
-        # Ajuster la largeur des colonnes dynamiquement
         if cols == 3:
             table.columns[0].width = Inches(6.0)
             table.columns[1].width = Inches(2.16)
             table.columns[2].width = Inches(2.16)
-        else:
-            col_width = Inches(10.33 / cols)
-            for i in range(cols):
-                table.columns[i].width = col_width
         
         # En-têtes
         for col_idx, col_name in enumerate(df_comparaison.columns):
@@ -415,11 +289,11 @@ class MinsantePPTXGenerator:
             cell.margin_top = Inches(0.05)
             cell.margin_bottom = Inches(0.05)
             
-            paragraph = cell.text_frame.paragraphs[0]
-            paragraph.font.bold = True
-            paragraph.font.size = Pt(13)
-            paragraph.font.color.rgb = self.color_white
-            paragraph.alignment = PP_ALIGN.CENTER
+            p = cell.text_frame.paragraphs[0]
+            p.font.size = Pt(13)
+            p.font.bold = True
+            p.font.color.rgb = self.color_white
+            p.alignment = PP_ALIGN.CENTER
         
         # Données
         for row_idx, row in df_comparaison.iterrows():
@@ -433,21 +307,48 @@ class MinsantePPTXGenerator:
                     cell.fill.solid()
                     cell.fill.fore_color.rgb = RGBColor(248, 249, 250)
                 
-                paragraph = cell.text_frame.paragraphs[0]
-                paragraph.font.size = Pt(11)
-                paragraph.font.color.rgb = self.color_dark
+                p = cell.text_frame.paragraphs[0]
+                p.font.size = Pt(11)
+                p.font.color.rgb = self.color_dark
                 
                 if col_idx == 0:
-                    paragraph.font.bold = True
-                    paragraph.alignment = PP_ALIGN.LEFT
+                    p.font.bold = True
+                    p.alignment = PP_ALIGN.LEFT
                 else:
-                    paragraph.alignment = PP_ALIGN.CENTER
+                    p.alignment = PP_ALIGN.CENTER
     
-    def _trier_semaines(self, semaines, valeurs):
-        """Trie les semaines par ordre chronologique (S1, S2, S3, ...)."""
-        def extraire_numero(semaine_label):
+    def slide_4_evolution(self, semaines, valeurs, titre_periode):
+        """SLIDE 4 : Graphique d'évolution"""
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
+        
+        # [1] BANDE VERTE
+        shape = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(13.33), Inches(1.0))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = self.color_vert
+        shape.line.fill.background()
+        
+        # [2] TITRE
+        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.15), Inches(12.0), Inches(0.7))
+        p = txBox.text_frame.paragraphs[0]
+        p.text = "ÉVOLUTION DES APPELS"
+        p.font.size = Pt(32)
+        p.font.bold = True
+        p.font.color.rgb = self.color_white
+        p.alignment = PP_ALIGN.CENTER
+        
+        # [3] SOUS-TITRE
+        txBox = slide.shapes.add_textbox(Inches(1.0), Inches(1.2), Inches(11.33), Inches(0.4))
+        p = txBox.text_frame.paragraphs[0]
+        p.text = f"📈 Période : {titre_periode}"
+        p.font.size = Pt(18)
+        p.font.bold = True
+        p.font.color.rgb = self.color_rouge
+        p.alignment = PP_ALIGN.CENTER
+        
+        # Trier semaines
+        def extraire_numero(s):
             try:
-                return int(semaine_label.split('_')[0][1:])
+                return int(s.split('_')[0][1:])
             except:
                 return 0
         
@@ -456,106 +357,58 @@ class MinsantePPTXGenerator:
         semaines_triees = [c[0] for c in couples_tries]
         valeurs_triees = [c[1] for c in couples_tries]
         
-        return semaines_triees, valeurs_triees
-    
-    def slide_4_evolution(self, semaines, valeurs, titre_periode=""):
-        """Génère la Slide 4 : Graphique d'évolution en colonnes"""
-        slide_layout = self.prs.slide_layouts[6]
-        slide = self.prs.slides.add_slide(slide_layout)
-        
-        semaines_triees, valeurs_triees = self._trier_semaines(semaines, valeurs)
-        
-        if not titre_periode and semaines_triees:
-            titre_periode = f"{semaines_triees[0]} à {semaines_triees[-1]}"
-        
-        print(f"📈 Graphique d'évolution : {len(semaines_triees)} semaines de {semaines_triees[0]} à {semaines_triees[-1]}")
-        
-        # Bande verte en haut avec titre
-        shape = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(13.33), Inches(1.0))
-        shape.fill.solid()
-        shape.fill.fore_color.rgb = self.color_vert
-        shape.line.fill.background()
-        
-        # Titre
-        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.15), Inches(12), Inches(0.7))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
-        p.text = f"ÉVOLUTION DES APPELS"
-        p.font.size = Pt(32)
-        p.font.bold = True
-        p.font.color.rgb = self.color_white
-        p.alignment = PP_ALIGN.CENTER
-        
-        # Sous-titre avec période
-        txBox = slide.shapes.add_textbox(Inches(1.0), Inches(1.2), Inches(11.33), Inches(0.4))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
-        p.text = f"📈 Période : {titre_periode}"
-        p.font.size = Pt(18)
-        p.font.bold = True
-        p.font.color.rgb = self.color_rouge
-        p.alignment = PP_ALIGN.CENTER
-        
-        # Créer les données du graphique
+        # [4] GRAPHIQUE
         chart_data = CategoryChartData()
         chart_data.categories = semaines_triees
-        chart_data.add_series('Nombre d\'appels', valeurs_triees)
+        chart_data.add_series('Appels', valeurs_triees)
         
-        # Ajouter le graphique en colonnes
         graphic_frame = slide.shapes.add_chart(
-            XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(0.8), Inches(1.9), Inches(11.73), Inches(5.2), chart_data
+            XL_CHART_TYPE.COLUMN_CLUSTERED,
+            Inches(0.8), Inches(1.9), Inches(11.73), Inches(5.2),
+            chart_data
         )
         
         chart = graphic_frame.chart
+        chart.has_title = False
         chart.has_legend = False
-        
-        if chart.has_title:
-            chart.chart_title.text_frame.clear()
-            chart.has_title = False
         
         series = chart.series[0]
         fill = series.format.fill
         fill.solid()
         fill.fore_color.rgb = self.color_vert
         
-        value_axis = chart.value_axis
-        value_axis.has_major_gridlines = True
-        
-        category_axis = chart.category_axis
-        category_axis.tick_labels.font.size = Pt(9)
+        chart.value_axis.has_major_gridlines = True
+        chart.category_axis.tick_labels.font.size = Pt(9)
     
-    def slide_5_questions_interet(self, periode, questions_list):
-        """Génère la Slide 5 : Questions d'intérêt posées"""
-        slide_layout = self.prs.slide_layouts[6]
-        slide = self.prs.slides.add_slide(slide_layout)
+    def slide_5_questions(self, periode, questions_list):
+        """SLIDE 5 : Questions d'intérêt"""
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
         
-        # Bande verte en haut avec titre
+        # [1] BANDE VERTE
         shape = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(13.33), Inches(1.0))
         shape.fill.solid()
         shape.fill.fore_color.rgb = self.color_vert
         shape.line.fill.background()
         
-        # Titre
-        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.15), Inches(12), Inches(0.7))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
-        p.text = f"QUESTIONS D'INTÉRÊT POSÉES AU 1510"
+        # [2] TITRE
+        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.15), Inches(12.0), Inches(0.7))
+        p = txBox.text_frame.paragraphs[0]
+        p.text = "QUESTIONS D'INTÉRÊT POSÉES AU 1510"
         p.font.size = Pt(32)
         p.font.bold = True
         p.font.color.rgb = self.color_white
         p.alignment = PP_ALIGN.CENTER
         
-        # Sous-titre avec période
+        # [3] SOUS-TITRE
         txBox = slide.shapes.add_textbox(Inches(1.0), Inches(1.2), Inches(11.33), Inches(0.4))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
+        p = txBox.text_frame.paragraphs[0]
         p.text = f"📅 Période : {periode}"
         p.font.size = Pt(16)
         p.font.bold = True
         p.font.color.rgb = self.color_rouge
         p.alignment = PP_ALIGN.CENTER
         
-        # Zone de texte pour les questions
+        # [4] QUESTIONS
         txBox = slide.shapes.add_textbox(Inches(1.5), Inches(2.0), Inches(10.33), Inches(4.8))
         tf = txBox.text_frame
         tf.word_wrap = True
@@ -572,31 +425,30 @@ class MinsantePPTXGenerator:
             p.space_before = Pt(12)
             p.space_after = Pt(12)
             p.line_spacing = 1.3
-            p.level = 0
     
     def slide_6_activites(self, activites_menees, activites_planifiees):
-        """Génère la Slide 6 : Activités menées et planifiées"""
-        slide_layout = self.prs.slide_layouts[6]
-        slide = self.prs.slides.add_slide(slide_layout)
+        """SLIDE 6 : Activités"""
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
         
-        # Bande verte en haut avec titre
+        # [1] BANDE VERTE
         shape = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(13.33), Inches(1.0))
         shape.fill.solid()
         shape.fill.fore_color.rgb = self.color_vert
         shape.line.fill.background()
         
-        # Titre
-        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.2), Inches(12), Inches(0.6))
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
+        # [2] TITRE
+        txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.2), Inches(12.0), Inches(0.6))
+        p = txBox.text_frame.paragraphs[0]
         p.text = "ACTIVITÉS MENÉES ET PLANIFIÉES"
         p.font.size = Pt(32)
         p.font.bold = True
         p.font.color.rgb = self.color_white
         p.alignment = PP_ALIGN.CENTER
         
-        # Créer le tableau 2x2
-        table = slide.shapes.add_table(2, 2, Inches(1.0), Inches(1.5), Inches(11.33), Inches(5.5)).table
+        # [3] TABLEAU
+        table = slide.shapes.add_table(
+            2, 2, Inches(1.0), Inches(1.5), Inches(11.33), Inches(5.5)
+        ).table
         
         table.columns[0].width = Inches(5.665)
         table.columns[1].width = Inches(5.665)
@@ -611,19 +463,18 @@ class MinsantePPTXGenerator:
             cell.margin_top = Inches(0.1)
             cell.margin_bottom = Inches(0.1)
             
-            paragraph = cell.text_frame.paragraphs[0]
-            paragraph.font.bold = True
-            paragraph.font.size = Pt(16)
-            paragraph.font.color.rgb = self.color_white
-            paragraph.alignment = PP_ALIGN.CENTER
+            p = cell.text_frame.paragraphs[0]
+            p.font.size = Pt(16)
+            p.font.bold = True
+            p.font.color.rgb = self.color_white
+            p.alignment = PP_ALIGN.CENTER
         
-        # Contenu - Activités menées
-        cell_menees = table.cell(1, 0)
-        cell_menees.margin_left = Inches(0.15)
-        cell_menees.margin_right = Inches(0.15)
-        cell_menees.margin_top = Inches(0.15)
-        
-        tf = cell_menees.text_frame
+        # Activités menées
+        cell = table.cell(1, 0)
+        cell.margin_left = Inches(0.15)
+        cell.margin_right = Inches(0.15)
+        cell.margin_top = Inches(0.15)
+        tf = cell.text_frame
         tf.clear()
         
         for i, activite in enumerate(activites_menees):
@@ -637,13 +488,12 @@ class MinsantePPTXGenerator:
             p.space_before = Pt(8)
             p.space_after = Pt(8)
         
-        # Contenu - Activités planifiées
-        cell_planifiees = table.cell(1, 1)
-        cell_planifiees.margin_left = Inches(0.15)
-        cell_planifiees.margin_right = Inches(0.15)
-        cell_planifiees.margin_top = Inches(0.15)
-        
-        tf = cell_planifiees.text_frame
+        # Activités planifiées
+        cell = table.cell(1, 1)
+        cell.margin_left = Inches(0.15)
+        cell.margin_right = Inches(0.15)
+        cell.margin_top = Inches(0.15)
+        tf = cell.text_frame
         tf.clear()
         
         for i, activite in enumerate(activites_planifiees):
@@ -658,18 +508,17 @@ class MinsantePPTXGenerator:
             p.space_after = Pt(8)
     
     def slide_7_merci(self):
-        """Génère la Slide 7 : Slide de remerciement."""
-        slide_layout = self.prs.slide_layouts[6]
-        slide = self.prs.slides.add_slide(slide_layout)
+        """SLIDE 7 : Merci"""
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
         
-        # Fond avec dégradé vert
+        # [1] FOND VERT
         shape = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(13.33), Inches(7.5))
         shape.fill.solid()
         shape.fill.fore_color.rgb = self.color_vert
         shape.line.fill.background()
         
-        # Texte MERCI
-        txBox = slide.shapes.add_textbox(Inches(2), Inches(2.0), Inches(9.33), Inches(2.0))
+        # [2] TEXTE MERCI
+        txBox = slide.shapes.add_textbox(Inches(2.0), Inches(2.0), Inches(9.33), Inches(2.0))
         tf = txBox.text_frame
         tf.text = "MERCI"
         
@@ -679,8 +528,8 @@ class MinsantePPTXGenerator:
         p.font.bold = True
         p.font.color.rgb = self.color_white
         
-        # Sous-texte
-        txBox = slide.shapes.add_textbox(Inches(2), Inches(4.2), Inches(9.33), Inches(1.5))
+        # [3] SOUS-TEXTE
+        txBox = slide.shapes.add_textbox(Inches(2.0), Inches(4.2), Inches(9.33), Inches(1.5))
         tf = txBox.text_frame
         tf.word_wrap = True
         
@@ -696,212 +545,160 @@ class MinsantePPTXGenerator:
         p2.font.size = Pt(18)
         p2.font.color.rgb = self.color_white
     
-    def sauvegarder(self, nom_fichier="Situation_Centre_Appel.pptx"):
-        """Sauvegarde la présentation."""
-        pptx_stream = io.BytesIO()
-        self.prs.save(pptx_stream)
-        pptx_stream.seek(0)
-        return pptx_stream.getvalue()
+    def sauvegarder(self, output_path):
+        """Sauvegarde la présentation"""
+        self.prs.save(output_path)
 
 
 # ==============================================================================
-# FONCTION ORIGINALE (pour compatibilité avec ancien code)
-# ==============================================================================
-
-def generer_rapport_minsante_old(donnees, date_rapport, periode_faits, drapeau_path=None):
-    """
-    Fonction ORIGINALE - pour compatibilité.
-    Signature: generer_rapport_minsante(donnees, date_rapport, periode_faits, drapeau_path)
-    """
-    gen = MinsantePPTXGenerator(drapeau_path=drapeau_path)
-    
-    # Slide 1
-    gen.slide_1_titre(date_rapport)
-    
-    # Slide 2
-    gen.slide_2_faits_saillants(
-        periode=periode_faits,
-        total_appels=donnees.get('total_appels', 0),
-        renseignements_data=donnees.get('renseignements', {}),
-        assistance_data=donnees.get('assistance', {}),
-        signaux_data=donnees.get('signaux', {}),
-        autres_data=donnees.get('autres', {})
-    )
-    
-    # Slide 3
-    if 'df_comparaison' in donnees:
-        gen.slide_3_comparaison(
-            semaine1=donnees.get('semaine1', ''),
-            semaine2=donnees.get('semaine2', ''),
-            df_comparaison=donnees['df_comparaison']
-        )
-    
-    # Slide 4
-    if 'semaines' in donnees and 'valeurs_evolution' in donnees:
-        semaines = donnees['semaines']
-        if semaines:
-            def extraire_numero(s):
-                try:
-                    return int(s.split('_')[0][1:])
-                except:
-                    return 0
-            semaines_triees = sorted(semaines, key=extraire_numero)
-            titre_periode = donnees.get('titre_evolution', f"{semaines_triees[0]} à {semaines_triees[-1]}")
-        else:
-            titre_periode = donnees.get('titre_evolution', '')
-        
-        gen.slide_4_evolution(
-            semaines=semaines,
-            valeurs=donnees['valeurs_evolution'],
-            titre_periode=titre_periode
-        )
-    
-    # Slide 5
-    if 'questions' in donnees:
-        gen.slide_5_questions_interet(
-            periode=donnees.get('periode_questions', periode_faits),
-            questions_list=donnees['questions']
-        )
-    
-    # Slide 6
-    if 'activites_menees' in donnees and 'activites_planifiees' in donnees:
-        gen.slide_6_activites(
-            activites_menees=donnees['activites_menees'],
-            activites_planifiees=donnees['activites_planifiees']
-        )
-    
-    # Slide 7
-    gen.slide_7_merci()
-    
-    return gen.sauvegarder()
-
-
-# ==============================================================================
-# FONCTION WRAPPER POUR NOUVELLE ARCHITECTURE
+# FONCTION WRAPPER
 # ==============================================================================
 
 def generer_rapport_minsante(df_appels, df_calendrier, semaine, output_path):
-    """
-    Wrapper pour la NOUVELLE ARCHITECTURE.
-    Signature: generer_rapport_minsante(df_appels, df_calendrier, semaine, output_path)
-    
-    Convertit les nouveaux paramètres vers l'ancien format.
-    """
+    """Génère un rapport PowerPoint MINSANTE"""
     from utils.data_processor import (
-        calculer_totaux_semaine, 
-        calculer_regroupements,
+        calculer_totaux_semaine,
         calculer_totaux_hebdomadaires,
         comparer_periodes
     )
     from config import settings
     
-    print(f"🎯 Génération rapport MINSANTE pour {semaine}...")
-    
-    # Calculer les données de la semaine
+    # Calculer totaux
     totaux = calculer_totaux_semaine(df_appels, semaine)
     df_semaine = df_appels[df_appels['Semaine épidémiologique'] == semaine]
     
-    # Préparer les données pour les graphiques camembert
+    # Préparer données graphiques
+    # ✅ CORRECTION : Utiliser les VRAIES clés de settings.REGROUPEMENTS
+    
+    # Graphique 1 : Renseignements Santé
     renseignements_data = {}
-    if 'RENSEIGNEMENTS' in settings.REGROUPEMENTS:
-        for cat in settings.REGROUPEMENTS['RENSEIGNEMENTS']:
+    if 'Renseignements Santé' in settings.REGROUPEMENTS:
+        for cat in settings.REGROUPEMENTS['Renseignements Santé']:
             if cat in df_semaine.columns:
                 val = int(df_semaine[cat].sum())
                 if val > 0:
                     label = settings.LABELS_CATEGORIES.get(cat, cat)
                     renseignements_data[label] = val
     
+    # Graphique 2 : Assistances Médicales
     assistance_data = {}
-    if 'ASSISTANCES' in settings.REGROUPEMENTS:
-        for cat in settings.REGROUPEMENTS['ASSISTANCES']:
+    if 'Assistances Médicales' in settings.REGROUPEMENTS:
+        for cat in settings.REGROUPEMENTS['Assistances Médicales']:
             if cat in df_semaine.columns:
                 val = int(df_semaine[cat].sum())
                 if val > 0:
                     label = settings.LABELS_CATEGORIES.get(cat, cat)
                     assistance_data[label] = val
     
+    # Graphique 3 : Signaux
     signaux_data = {}
-    if 'SIGNAUX' in settings.REGROUPEMENTS:
-        for cat in settings.REGROUPEMENTS['SIGNAUX']:
+    if 'Signaux' in settings.REGROUPEMENTS:
+        for cat in settings.REGROUPEMENTS['Signaux']:
             if cat in df_semaine.columns:
                 val = int(df_semaine[cat].sum())
                 if val > 0:
                     label = settings.LABELS_CATEGORIES.get(cat, cat)
                     signaux_data[label] = val
     
-    # Préparer le dictionnaire de données (ancien format)
-    donnees = {
-        'total_appels': totaux['total'],
-        'renseignements': renseignements_data,
-        'assistance': assistance_data,
-        'signaux': signaux_data,
-        'autres': {
-            'appels_sortants': 0,
-            'total': totaux['total']
-        }
-    }
+    # Créer générateur
+    gen = MinsantePPTXGenerator()
     
-    # Ajouter la comparaison
+    # SLIDE 1
+    date_rapport = totaux['date_fin'].strftime("%d %B %Y")
+    gen.slide_1_titre(date_rapport)
+    
+    # SLIDE 2
+    periode = f"{totaux['date_debut'].strftime('%d')} au {totaux['date_fin'].strftime('%d %B %Y')}"
+    gen.slide_2_faits_saillants(
+        periode, totaux['total'],
+        renseignements_data, assistance_data, signaux_data,
+        {'appels_sortants': 0, 'total': totaux['total']}
+    )
+    
+    # SLIDE 3 : Comparaison (TABLEAU)
     try:
         semaines_disponibles = sorted(df_appels['Semaine épidémiologique'].unique())
-        idx_actuelle = semaines_disponibles.index(semaine)
-        
-        if idx_actuelle > 0:
-            semaine_precedente = semaines_disponibles[idx_actuelle - 1]
-            df_comparaison = comparer_periodes(df_appels, [semaine_precedente, semaine])
-            donnees['df_comparaison'] = df_comparaison
-            donnees['semaine1'] = semaine_precedente
-            donnees['semaine2'] = semaine
+        idx = semaines_disponibles.index(semaine)
+        if idx > 0:
+            semaine_precedente = semaines_disponibles[idx - 1]
+            df_comp = comparer_periodes(df_appels, [semaine_precedente, semaine])
+            gen.slide_3_comparaison(semaine_precedente, semaine, df_comp)
+        else:
+            # Créer un DataFrame vide si pas de semaine précédente
+            import pandas as pd
+            df_vide = pd.DataFrame({
+                'Catégorie': ['Pas de données'],
+                semaine: [0]
+            })
+            gen.slide_3_comparaison(semaine, semaine, df_vide)
     except Exception as e:
-        print(f"⚠️ Pas de comparaison disponible: {e}")
+        print(f"⚠️ Erreur slide 3: {e}")
+        import pandas as pd
+        df_vide = pd.DataFrame({
+            'Catégorie': ['Erreur'],
+            semaine: [0]
+        })
+        gen.slide_3_comparaison(semaine, semaine, df_vide)
     
-    # Ajouter l'évolution
+    # SLIDE 4 : Évolution (GRAPHIQUE) - TOUJOURS avec TOUTES les semaines
     try:
+        # ✅ Utiliser df_appels COMPLET pour avoir l'évolution de S5_2025 à S48_2025
         df_hebdo = calculer_totaux_hebdomadaires(df_appels)
+        
+        # Fonction de tri
+        def extraire_numero(s):
+            try:
+                return int(s.split('_')[0][1:])
+            except:
+                return 0
+        
+        # Récupérer et trier les semaines
         semaines = df_hebdo['Semaine épidémiologique'].tolist()
         valeurs = df_hebdo['TOTAL_APPELS_SEMAINE'].tolist()
         
-        donnees['semaines'] = semaines
-        donnees['valeurs_evolution'] = valeurs
+        couples = list(zip(semaines, valeurs))
+        couples_tries = sorted(couples, key=lambda x: extraire_numero(x[0]))
+        semaines_triees = [c[0] for c in couples_tries]
+        valeurs_triees = [c[1] for c in couples_tries]
+        
+        # Titre avec première et dernière semaine
+        titre = f"{semaines_triees[0]} à {semaines_triees[-1]}"
+        
+        print(f"📈 Graphique évolution : {len(semaines_triees)} semaines de {semaines_triees[0]} à {semaines_triees[-1]}")
+        
+        gen.slide_4_evolution(semaines_triees, valeurs_triees, titre)
     except Exception as e:
-        print(f"⚠️ Pas d'évolution disponible: {e}")
+        print(f"⚠️ Erreur slide 4: {e}")
+        # En cas d'erreur, créer graphique avec la semaine actuelle seulement
+        gen.slide_4_evolution([semaine], [totaux['total']], semaine)
     
-    # Ajouter les questions d'intérêt
-    donnees['questions'] = [
+    # SLIDE 5 : Questions (TEXTE)
+    questions = [
         "Qu'elle est la durée de validité d'une carte CSU ?",
-        "Est ce qu'on peut avoir une CSU avant d'accoucher ?",
-        "Combien coûte une carte CSU ?",
-        "Quel est le délai pour recevoir la carte CSU ?",
-        "Puis-je utiliser ma carte CSU dans toutes les structures de santé ?"
+        "Est-ce qu'un Diabétique peut bénéficier de la CSU ?",
+        "Comment obtenir une carte CSU ?",
+        "Quels sont les centres de santé agréés CSU ?",
+        "Puis-je utiliser ma carte CSU dans toutes les régions ?"
     ]
+    gen.slide_5_questions(periode, questions)
     
-    # Ajouter les activités
-    donnees['activites_menees'] = [
+    # SLIDE 6 : Activités (TABLEAU)
+    activites_menees = [
         "Formation des opérateurs sur la gestion des appels d'urgence",
         "Mise à jour de la base de données des centres de santé",
-        "Coordination avec les équipes de surveillance épidémiologique",
-        "Analyse des tendances hebdomadaires des appels"
+        "Coordination avec les équipes de surveillance épidémiologique"
     ]
-    
-    donnees['activites_planifiees'] = [
+    activites_planifiees = [
         "Extension de la couverture géographique du service 1510",
         "Intégration d'un système de triage automatisé",
-        "Formation continue sur les nouvelles pathologies émergentes",
-        "Évaluation de la satisfaction des usagers"
+        "Formation continue sur les nouvelles pathologies émergentes"
     ]
+    gen.slide_6_activites(activites_menees, activites_planifiees)
     
-    # Préparer les dates
-    date_rapport = totaux['date_fin'].strftime("%d %B %Y")
-    periode_faits = f"{totaux['date_debut'].strftime('%d')} au {totaux['date_fin'].strftime('%d %B %Y')}"
-    
-    # Générer le rapport en appelant la fonction ORIGINALE
-    pptx_bytes = generer_rapport_minsante_old(donnees, date_rapport, periode_faits)
+    # SLIDE 7 : Merci
+    gen.slide_7_merci()
     
     # Sauvegarder
-    with open(output_path, 'wb') as f:
-        f.write(pptx_bytes)
-    
-    print(f"✅ Rapport MINSANTE généré : {output_path}")
-    print(f"📊 7 slides complètes")
+    gen.sauvegarder(output_path)
     
     return output_path

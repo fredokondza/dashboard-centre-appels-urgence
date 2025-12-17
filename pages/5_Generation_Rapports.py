@@ -1,6 +1,6 @@
 """
 ==============================================================================
-PAGE 5 - GÉNÉRATION DE RAPPORTS POWERPOINT - VERSION AMÉLIORÉE
+PAGE 5 - GÉNÉRATION DE RAPPORTS POWERPOINT - VERSION CORRIGÉE
 ==============================================================================
 Page dédiée à la génération automatique de rapports PowerPoint :
 - Modèle UNIQUE optimisé (MINSANTE)
@@ -9,14 +9,15 @@ Page dédiée à la génération automatique de rapports PowerPoint :
 - Téléchargement du rapport généré
 - Historique des rapports
 
-Nouveautés v4.0:
+Nouveautés v4.1:
+✨ Correction de l'évolution : affiche toutes les semaines (S5 à S48)
 ✨ Filtre de dates personnalisé (jour début - jour fin)
 ✨ Modèle unique optimisé avec graphiques améliorés
 ✨ Interface simplifiée et intuitive
 
 Auteur: Fred - AIMS Cameroon / MINSANTE
-Date: Décembre 2025
-Version: 4.0 - Filtre Dates Personnalisées + Modèle Unique Optimisé
+Date: 17 Décembre 2025
+Version: 4.1 - Correction Évolution Hebdomadaire
 ==============================================================================
 """
 
@@ -137,7 +138,7 @@ parent.document.addEventListener('click', function(e) {
 """, height=0)
 
 logger = setup_logger('generation_rapports')
-logger.info("=== Page Génération de Rapports v4.0 chargée ===")
+logger.info("=== Page Génération de Rapports v4.1 chargée ===")
 
 # ==============================================================================
 # IMPORTS DES GÉNÉRATEURS POWERPOINT
@@ -420,8 +421,8 @@ st.info("""
 **Contenu du rapport :**
 - 📊 Slide 1 : Page de titre avec drapeau du Cameroun
 - 📈 Slide 2 : Faits saillants avec 3 graphiques camembert optimisés
-- 📋 Slide 3 : Tableau de comparaison
-- 📊 Slide 4 : Graphique d'évolution avec étiquettes
+- 📋 Slide 3 : Tableau de comparaison (semaine N-1 vs N)
+- 📊 Slide 4 : Graphique d'évolution **de S5_2025 à S48_2025** (toutes les semaines)
 - 💬 Slide 5 : Questions d'intérêt
 - ✅ Slide 6 : Activités menées et planifiées
 - 🙏 Slide 7 : Remerciements
@@ -452,23 +453,27 @@ if st.button("🎯 GÉNÉRER LE RAPPORT POWERPOINT", type="primary", use_contain
             # S'assurer que le dossier outputs existe
             settings.OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
             
-            # Filtrer les données pour la période sélectionnée
+            # ✅ CORRECTION : Déterminer la semaine pour le rapport
             if mode_generation == "semaine":
-                df_filtered = df_appels[df_appels['Semaine épidémiologique'] == periode_label]
                 semaine_param = periode_label
             else:
+                # Pour mode période, on utilise la semaine de la date de fin
                 df_filtered = df_appels[
                     (df_appels['DATE'] >= data_debut) & 
                     (df_appels['DATE'] <= data_fin)
                 ]
-                # Pour mode période, on utilise la semaine de la date de fin
                 semaine_param = df_filtered['Semaine épidémiologique'].iloc[-1] if len(df_filtered) > 0 else "CUSTOM"
             
-            # Appeler le générateur
+            # ✅ CORRECTION : Passer df_appels COMPLET (non filtré)
+            # Le générateur filtrera lui-même pour chaque slide selon le besoin :
+            # - Slide 2 (Faits saillants) : filtre sur semaine_param uniquement
+            # - Slide 3 (Comparaison) : filtre sur semaine_param vs semaine N-1
+            # - Slide 4 (Évolution) : utilise TOUTES les semaines (S5_2025 à S48_2025)
+            # - Slide 5 (Questions) : filtre sur semaine_param
             output_file = generer_rapport_minsante(
-                df_appels=df_filtered,
+                df_appels=df_appels,  # ✅ TOUTES les semaines (S5_2025 à S48_2025)
                 df_calendrier=df_calendrier,
-                semaine=semaine_param,
+                semaine=semaine_param,  # Semaine sélectionnée (ex: S48_2025)
                 output_path=str(output_path)
             )
             
@@ -649,85 +654,35 @@ with st.expander("ℹ️ Guide d'Utilisation", expanded=False):
     - Date de la période
     
     **Slide 2 : Faits Saillants**
-    - Total des appels
-    - 3 graphiques camembert optimisés :
-      - Renseignements Santé (palette bleue)
-      - Assistances Médicales (palette rouge)
-      - Signaux de Surveillance (palette violette)
-    - Étiquettes avec pourcentages et valeurs
+    - Total des appels de la semaine sélectionnée
+    - 3 graphiques camembert optimisés
     
     **Slide 3 : Comparaison**
-    - Tableau de comparaison avec la période précédente
-    - Évolution par catégorie
+    - Tableau de comparaison entre semaine N-1 et semaine N
     
-    **Slide 4 : Évolution**
-    - Graphique en colonnes avec tri automatique
-    - Étiquettes de données
-    - Tendances visuelles
+    **Slide 4 : Évolution - CORRIGÉE ✅**
+    - Graphique en colonnes montrant **toutes les semaines de S5_2025 à S48_2025**
+    - Permet de visualiser la tendance complète depuis le début de l'année
     
     **Slide 5 : Questions d'Intérêt**
     - Top 5 questions posées au 1510
-    - Formatage professionnel
     
     **Slide 6 : Activités**
     - Tableau 2x2 : Activités menées / Activités planifiées
-    - Vision synthétique des actions
     
     **Slide 7 : Remerciements**
     - Slide de clôture
-    - Fond vert Cameroun
     
-    ### 🎨 Améliorations Graphiques v4.0
+    ### 💡 Nouveauté v4.1 : Correction de l'Évolution
     
-    ✨ **Couleurs optimisées pour PowerPoint**
-    - Palettes vives et contrastées
-    - Différenciation visuelle par thématique
+    ✅ **La Slide 4 affiche maintenant correctement :**
+    - "Période : S5_2025 à S48_2025" (au lieu de "S48_2025 à S48_2025")
+    - Graphique avec 44 barres montrant l'évolution complète
+    - Tri automatique des semaines dans l'ordre chronologique
     
-    ✨ **Étiquettes améliorées**
-    - Pourcentages + Valeurs affichés
-    - Police blanche en gras pour contraste
-    - Position optimisée (INSIDE_END)
+    ### 🔧 Support Technique
     
-    ✨ **Légendes professionnelles**
-    - Placement en bas
-    - Taille de police adaptée
-    - Ne surcharge pas le graphique
-    
-    ### 💡 Conseils d'Utilisation
-    
-    ✅ **Pour les rapports hebdomadaires standards**
-    - Utilisez le mode "Semaine"
-    - Générez le rapport chaque semaine
-    
-    ✅ **Pour des analyses spécifiques**
-    - Utilisez le mode "Période"
-    - Choisissez n'importe quelle plage de dates
-    - Exemples : début/fin de mois, périodes de pics, etc.
-    
-    ✅ **Avant une présentation**
-    - Générez le rapport à l'avance
-    - Vérifiez les données
-    - Conservez plusieurs versions dans l'historique
-    
-    ### 🔧 Dépannage
-    
-    **Le rapport ne se génère pas ?**
-    - Vérifiez que la période contient des données
-    - Vérifiez que les fichiers sont bien chargés
-    - Consultez les détails de l'erreur
-    
-    **Le téléchargement ne fonctionne pas ?**
-    - Vérifiez votre navigateur
-    - Réessayez la génération
-    - Consultez l'historique des rapports
-    
-    **Les graphiques sont vides ?**
-    - Vérifiez que la période contient des appels
-    - Certaines catégories peuvent être à zéro
-    
-    ### 📞 Support
-    
-    Pour toute question ou assistance :
+    Pour toute question :
     - Consultez la documentation technique
     - Contactez l'équipe MINSANTE/CCOUSP
     """)
@@ -741,7 +696,7 @@ st.markdown("""
 <div style='text-align: center; color: #666; padding: 20px;'>
     <p><strong>Dashboard Centre d'Appels d'Urgence Sanitaire 1510</strong></p>
     <p>Centre de Coordination des Urgences de Santé Publique (CCOUSP) - MINSANTE</p>
-    <p>Version 4.0 - Décembre 2025</p>
+    <p>Version 4.1 - 17 Décembre 2025 - Correction Évolution Hebdomadaire</p>
 </div>
 """, unsafe_allow_html=True)
 
